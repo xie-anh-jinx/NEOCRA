@@ -7,26 +7,72 @@ import { useAuth } from "@/hooks/use-auth";
 import { canAccessNav, ERP_NAVIGATION } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import {
+  Activity,
+  BarChart3,
+  BookOpen,
+  Boxes,
   Building2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  CreditCard,
+  FileSpreadsheet,
+  FileText,
+  LayoutDashboard,
   LogOut,
+  Moon,
+  Package,
   ShieldCheck,
+  ShoppingCart,
+  Sun,
+  Truck,
   User,
+  Users,
+  Wallet,
   Warehouse,
 } from "lucide-react";
+
+function getNavIcon(href: string) {
+  if (href === "/dashboard") return <LayoutDashboard size={18} />;
+  if (href.startsWith("/master/items")) return <Package size={18} />;
+  if (href.startsWith("/master/suppliers")) return <Building2 size={18} />;
+  if (href.startsWith("/master/customers")) return <Users size={18} />;
+  if (href.startsWith("/master/employees")) return <User size={18} />;
+  if (href.startsWith("/inventory/stock-card")) return <Activity size={18} />;
+  if (href.startsWith("/inventory")) return <Boxes size={18} />;
+  if (href.startsWith("/purchasing/requests")) return <ClipboardList size={18} />;
+  if (href.startsWith("/purchasing")) return <ShoppingCart size={18} />;
+  if (href.startsWith("/sales/orders")) return <FileText size={18} />;
+  if (href.startsWith("/sales/invoices")) return <FileSpreadsheet size={18} />;
+  if (href.startsWith("/warehouse/receipts")) return <Warehouse size={18} />;
+  if (href.startsWith("/warehouse/deliveries")) return <Truck size={18} />;
+  if (href.startsWith("/finance/accounts")) return <BookOpen size={18} />;
+  if (href.startsWith("/finance/ar")) return <Wallet size={18} />;
+  if (href.startsWith("/finance/ap")) return <CreditCard size={18} />;
+  if (href.startsWith("/finance/journals")) return <BarChart3 size={18} />;
+  return <Wallet size={18} />;
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  const toggleDark = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", next);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#f1f4fa]">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#3a36db] border-t-transparent" />
+          <p className="mt-3 text-sm font-medium text-[#788a9a]">
             Memuat NEOCRA ERP...
           </p>
         </div>
@@ -35,40 +81,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
-      {/* Sidebar */}
+    <div
+      className={cn(
+        "flex min-h-screen transition-colors",
+        darkMode ? "bg-[#222131] text-white" : "bg-[#f1f4fa] text-[#06152b]"
+      )}
+    >
+      {/* Figma-style Sidebar */}
       <aside
         className={cn(
-          "flex flex-col border-r border-slate-200 bg-slate-900 text-slate-100 transition-all duration-200",
-          collapsed ? "w-16" : "w-68"
+          "flex flex-col transition-all duration-200 border-r",
+          darkMode
+            ? "bg-[#39394b] border-white/10 text-white"
+            : "bg-white border-slate-200/70 text-[#06152b]",
+          collapsed ? "w-20" : "w-64"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
+        <div className="flex h-18 items-center justify-between px-4">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#605cff] to-[#3a36db] font-bold text-white shadow-md shadow-[#3a36db]/25">
                 CRA
               </div>
               <div>
-                <div className="text-sm font-bold tracking-wide text-white">
-                  NEOCRA ERP
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  PT. Cahaya Resource Abadi
+                <div className="text-sm font-bold tracking-tight">NEOCRA</div>
+                <div className={cn("text-[11px]", darkMode ? "text-[#a1a0b8]" : "text-[#788a9a]")}>
+                  Enterprise ERP
                 </div>
               </div>
             </div>
           )}
+          {collapsed && (
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#605cff] to-[#3a36db] font-bold text-white shadow-md">
+              C
+            </div>
+          )}
           <button
             onClick={() => setCollapsed((v) => !v)}
-            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+            className={cn(
+              "rounded-lg p-1.5 transition-colors",
+              darkMode
+                ? "text-[#a1a0b8] hover:bg-white/10 hover:text-white"
+                : "text-[#788a9a] hover:bg-[#f1f4fa] hover:text-[#06152b]"
+            )}
             title={collapsed ? "Perluas sidebar" : "Ciutkan sidebar"}
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
           {ERP_NAVIGATION.map((group) => {
             const visibleItems = group.items.filter((item) =>
               canAccessNav(user, item)
@@ -77,7 +139,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <div key={group.group}>
                 {!collapsed && (
-                  <div className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <div
+                    className={cn(
+                      "mb-1.5 px-3 text-[11px] font-bold uppercase tracking-wider",
+                      darkMode ? "text-[#a1a0b8]" : "text-[#788a9a]"
+                    )}
+                  >
                     {group.group}
                   </div>
                 )}
@@ -90,16 +157,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <Link
                         key={item.href}
                         href={item.href}
+                        title={item.label}
                         className={cn(
-                          "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                           active
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            ? "bg-[#3a36db] text-white shadow-md shadow-[#3a36db]/25"
+                            : darkMode
+                            ? "text-[#a1a0b8] hover:bg-white/10 hover:text-white"
+                            : "text-[#788a9a] hover:bg-[#f1f4fa] hover:text-[#06152b]"
                         )}
                       >
-                        <span className="truncate">
-                          {collapsed ? item.label.slice(0, 2) : item.label}
+                        <span className={cn("shrink-0", active ? "text-white" : "")}>
+                          {getNavIcon(item.href)}
                         </span>
+                        {!collapsed && <span className="truncate">{item.label}</span>}
                       </Link>
                     );
                   })}
@@ -110,20 +181,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         {!collapsed && user && (
-          <div className="border-t border-slate-800 p-3 text-xs text-slate-400">
-            <div className="flex items-center gap-2 text-slate-200 font-medium">
-              <ShieldCheck size={14} className="text-emerald-400" />
+          <div
+            className={cn(
+              "m-3 rounded-xl p-3 text-xs",
+              darkMode ? "bg-[#222131]" : "bg-[#f1f4fa]"
+            )}
+          >
+            <div className="flex items-center gap-2 font-semibold">
+              <ShieldCheck size={14} className="text-[#2ee5a7]" />
               <span>
-                {user.is_superadmin ? "Superadmin Access" : `${user.roles.length} Roles`}
+                {user.is_superadmin ? "Superadmin" : `${user.roles.length} Roles`}
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-3 text-[11px]">
-              <span className="inline-flex items-center gap-1">
-                <Building2 size={12} /> {user.branches.length} Cabang
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Warehouse size={12} /> {user.warehouses.length} Gudang
-              </span>
+            <div
+              className={cn(
+                "mt-1 flex items-center gap-3 text-[11px]",
+                darkMode ? "text-[#a1a0b8]" : "text-[#788a9a]"
+              )}
+            >
+              <span>{user.branches.length} Cabang</span>
+              <span>·</span>
+              <span>{user.warehouses.length} Gudang</span>
             </div>
           </div>
         )}
@@ -132,40 +210,70 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Topbar */}
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-xs">
+        <header
+          className={cn(
+            "flex h-16 items-center justify-between px-6 border-b transition-colors",
+            darkMode
+              ? "bg-[#39394b]/80 border-white/10"
+              : "bg-white/80 backdrop-blur border-slate-200/70"
+          )}
+        >
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-slate-700">
-              Corporate Resource Application (NEOCRA v1)
+            <span className="text-sm font-bold">
+              PT. Cahaya Resource Abadi
             </span>
-            <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 border border-indigo-200">
-              Rust Axum + Next.js
+            <span className="hidden sm:inline-flex rounded-full bg-[#605cff]/10 px-2.5 py-0.5 text-xs font-semibold text-[#605cff]">
+              NEOCRA v1
             </span>
           </div>
 
-          {user && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2.5 text-right">
-                <div className="hidden sm:block">
-                  <div className="text-sm font-semibold text-slate-800">
-                    {user.nama} ({user.username})
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleDark}
+              className={cn(
+                "rounded-xl p-2 transition-colors",
+                darkMode
+                  ? "bg-[#222131] text-amber-300 hover:bg-white/10"
+                  : "bg-[#f1f4fa] text-[#788a9a] hover:text-[#06152b]"
+              )}
+              title="Toggle Light / Dark Mode"
+            >
+              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
+            {user && (
+              <div className="flex items-center gap-3 pl-2">
+                <div className="hidden sm:block text-right">
+                  <div className="text-sm font-bold leading-tight">
+                    {user.nama}
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {user.jabatan || "Administrator"} · {user.kantor || "HO - Balikpapan"}
+                  <div
+                    className={cn(
+                      "text-[11px]",
+                      darkMode ? "text-[#a1a0b8]" : "text-[#788a9a]"
+                    )}
+                  >
+                    {user.jabatan || "Administrator"}
                   </div>
                 </div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-700">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ff69b4]/15 text-[#ff69b4] font-bold">
                   <User size={18} />
                 </div>
+                <button
+                  onClick={logout}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
+                    darkMode
+                      ? "bg-[#222131] text-rose-400 hover:bg-rose-500/20"
+                      : "bg-[#f1f4fa] text-[#788a9a] hover:bg-rose-50 hover:text-rose-600"
+                  )}
+                >
+                  <LogOut size={14} />
+                  <span className="hidden md:inline">Keluar</span>
+                </button>
               </div>
-              <button
-                onClick={logout}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors"
-              >
-                <LogOut size={14} />
-                Keluar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

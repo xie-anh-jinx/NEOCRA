@@ -47,29 +47,29 @@ export function ErpTable<T>({
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{title}</h1>
-          {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+          {subtitle && <p className="text-xs text-[#788a9a] mt-0.5">{subtitle}</p>}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
+      <div className="rounded-2xl bg-white shadow-xs dark:bg-[#39394b]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           {onSearchChange ? (
             <div className="relative w-full sm:w-80">
               <Search
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788a9a]"
               />
               <input
                 type="text"
                 value={search || ""}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+                className="w-full rounded-xl border border-transparent bg-[#f1f4fa] py-2.5 pl-10 pr-3 text-sm text-[#06152b] placeholder:text-[#788a9a] focus:border-[#3a36db] focus:bg-white focus:outline-none dark:bg-[#222131] dark:text-white"
               />
             </div>
           ) : (
@@ -81,24 +81,24 @@ export function ErpTable<T>({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 text-xs font-semibold uppercase tracking-wider text-[#788a9a] dark:border-white/10">
                 {columns.map((col, idx) => (
                   <th
                     key={idx}
-                    className={`px-4 py-3 ${col.className || ""}`}
+                    className={`px-5 py-3.5 ${col.className || ""}`}
                   >
                     {col.header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100/70 dark:divide-white/5">
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
                     {columns.map((_, cIdx) => (
-                      <td key={cIdx} className="px-4 py-3.5">
-                        <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
+                      <td key={cIdx} className="px-5 py-4">
+                        <div className="h-4 w-full animate-pulse rounded bg-[#f1f4fa]" />
                       </td>
                     ))}
                   </tr>
@@ -107,7 +107,7 @@ export function ErpTable<T>({
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-4 py-10 text-center text-sm text-slate-400"
+                    className="px-5 py-12 text-center text-sm text-[#788a9a]"
                   >
                     Tidak ada data yang ditemukan.
                   </td>
@@ -119,16 +119,14 @@ export function ErpTable<T>({
                     onClick={() => onRowClick && onRowClick(row)}
                     className={
                       onRowClick
-                        ? "cursor-pointer hover:bg-indigo-50/50 transition-colors"
-                        : "hover:bg-slate-50/70"
+                        ? "cursor-pointer hover:bg-[#f1f4fa]/80 transition-colors dark:hover:bg-white/5"
+                        : "hover:bg-[#f1f4fa]/50 dark:hover:bg-white/5"
                     }
                   >
                     {columns.map((col, cIdx) => (
                       <td
                         key={cIdx}
-                        className={`px-4 py-3 text-slate-700 ${
-                          col.className || ""
-                        }`}
+                        className={`px-5 py-3.5 ${col.className || ""}`}
                       >
                         {col.accessor(row)}
                       </td>
@@ -140,14 +138,14 @@ export function ErpTable<T>({
           </table>
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
+        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5 text-xs text-[#788a9a] dark:border-white/10">
           <div>
             Menampilkan{" "}
-            <span className="font-semibold text-slate-700">
+            <span className="font-bold text-[#06152b] dark:text-white">
               {data.length}
             </span>{" "}
             dari{" "}
-            <span className="font-semibold text-slate-700">
+            <span className="font-bold text-[#06152b] dark:text-white">
               {total.toLocaleString("id-ID")}
             </span>{" "}
             data
@@ -156,17 +154,17 @@ export function ErpTable<T>({
             <button
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2.5 py-1 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-xl bg-[#f1f4fa] px-3 py-1.5 font-semibold text-[#06152b] hover:bg-slate-200/70 disabled:opacity-40 dark:bg-[#222131] dark:text-white"
             >
               <ChevronLeft size={14} /> Prev
             </button>
-            <span className="px-2 font-medium text-slate-700">
+            <span className="px-2 font-semibold">
               Hal {page} / {totalPages}
             </span>
             <button
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2.5 py-1 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-xl bg-[#f1f4fa] px-3 py-1.5 font-semibold text-[#06152b] hover:bg-slate-200/70 disabled:opacity-40 dark:bg-[#222131] dark:text-white"
             >
               Next <ChevronRight size={14} />
             </button>
