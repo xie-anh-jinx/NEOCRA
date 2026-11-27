@@ -57,10 +57,10 @@ jobs:
           pnpm build
 
       - name: Initialize & Build Android APK (aarch64)
-        working-directory: src-tauri
         run: |
-          npx --yes @tauri-apps/cli@^2 android init --ci
-          npx --yes @tauri-apps/cli@^2 android build --apk --target aarch64
+          npm install
+          npm run tauri -- android init --ci
+          npm run tauri -- android build --apk --target aarch64
 
       - name: Sign & Package NEOCRA-android.apk
         run: |
