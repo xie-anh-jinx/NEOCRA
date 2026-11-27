@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Android & iOS mobile hardware capabilities for NEOCRA",
+  "platforms": ["android", "iOS"],
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "fs:default",
+    "dialog:default",
+    "barcode-scanner:default",
+    "biometric:default",
+    "geolocation:default",
+    "nfc:default"
+  ]
+}

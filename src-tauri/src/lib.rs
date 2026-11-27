@@ -18,10 +18,19 @@ use tokio::sync::RwLock;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_dialog::init());
+
+    #[cfg(mobile)]
+    let builder = builder
+        .plugin(tauri_plugin_barcode_scanner::init())
+        .plugin(tauri_plugin_biometric::init())
+        .plugin(tauri_plugin_geolocation::init())
+        .plugin(tauri_plugin_nfc::init());
+
+    builder
         .setup(|app| {
             let app_dir = app
                 .path()
@@ -95,6 +104,8 @@ pub fn run() {
             commands::offline_login,
             commands::list_plugins,
             commands::get_ai_config,
+            commands::check_android_update,
+            commands::get_runtime_platform,
         ])
         .run(tauri::generate_context!())
         .expect("error while running NEOCRA desktop application");

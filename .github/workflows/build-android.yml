@@ -1,0 +1,105 @@
+name: Build NEOCRA Android (.apk — aarch64)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "android-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK & NDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+          echo "ANDROID_HOME=${ANDROID_SDK_ROOT:-$ANDROID_HOME}" >> $GITHUB_ENV
+          echo "NDK_HOME=${ANDROID_SDK_ROOT:-$ANDROID_HOME}/ndk/27.2.12479018" >> $GITHUB_ENV
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install Tauri CLI v2
+        run: cargo install tauri-cli --version "^2" --locked
+
+      - name: Install Frontend Dependencies & Build Static Export
+        working-directory: frontend
+        env:
+          TAURI_BUILD: "true"
+          NEXT_PUBLIC_API_URL: https://neocra.pengajaran.com
+          NEXT_PUBLIC_FASTAPI_URL: https://warehouse.pengajaran.com/api
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Initialize & Build Android APK (aarch64)
+        working-directory: src-tauri
+        run: |
+          cargo tauri android init --ci
+          cargo tauri android build --apk --target aarch64
+
+      - name: Sign & Package NEOCRA-android.apk
+        run: |
+          mkdir -p dist-android
+          UNSIGNED_APK=$(find src-tauri/gen/android/app/build/outputs/apk -name "*release-unsigned.apk" | head -n 1)
+          if [ -z "$UNSIGNED_APK" ]; then
+            UNSIGNED_APK=$(find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          fi
+          echo "Found APK: $UNSIGNED_APK"
+
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > neocra-release.keystore
+            KS_PASS="${{ secrets.ANDROID_STORE_PASSWORD }}"
+            KEY_ALIAS="${{ secrets.ANDROID_KEY_ALIAS }}"
+            KEY_PASS="${{ secrets.ANDROID_KEY_PASSWORD }}"
+          else
+            keytool -genkey -v -keystore neocra-release.keystore \
+              -alias neocra -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass neocra2026 -keypass neocra2026 \
+              -dname "CN=PT Cahaya Resource Abadi, OU=IT, O=CRA, L=Balikpapan, ST=Kalimantan Timur, C=ID"
+            KS_PASS="neocra2026"
+            KEY_ALIAS="neocra"
+            KEY_PASS="neocra2026"
+          fi
+
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          "$BUILD_TOOLS/zipalign" -f 4 "$UNSIGNED_APK" dist-android/NEOCRA-aligned.apk
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks neocra-release.keystore \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KS_PASS" \
+            --key-pass "pass:$KEY_PASS" \
+            --out dist-android/NEOCRA-android.apk \
+            dist-android/NEOCRA-aligned.apk
+          "$BUILD_TOOLS/apksigner" verify dist-android/NEOCRA-android.apk
+          ls -lh dist-android/NEOCRA-android.apk
+
+      - name: Upload Signed Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEOCRA-android-apk
+          path: dist-android/NEOCRA-android.apk

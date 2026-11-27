@@ -78,7 +78,50 @@ export function ErpTable<T>({
           <div className="flex flex-wrap items-center gap-2">{filters}</div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Card View (< md) */}
+        <div className="divide-y divide-slate-100 md:hidden dark:divide-white/10">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-4 space-y-2">
+                <div className="h-4 w-2/3 animate-pulse rounded bg-[#f1f4fa] dark:bg-[#222131]" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-[#f1f4fa] dark:bg-[#222131]" />
+              </div>
+            ))
+          ) : data.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#788a9a]">
+              Tidak ada data yang ditemukan.
+            </div>
+          ) : (
+            data.map((row, rIdx) => (
+              <div
+                key={rIdx}
+                onClick={() => onRowClick && onRowClick(row)}
+                className={
+                  onRowClick
+                    ? "p-4 space-y-1.5 active:bg-[#f1f4fa] dark:active:bg-white/5 cursor-pointer"
+                    : "p-4 space-y-1.5"
+                }
+              >
+                {columns.map((col, cIdx) => (
+                  <div
+                    key={cIdx}
+                    className="flex items-start justify-between gap-3 text-xs"
+                  >
+                    <span className="shrink-0 font-semibold text-[#788a9a] dark:text-[#a1a0b8]">
+                      {col.header}
+                    </span>
+                    <div className="text-right min-w-0 break-words">
+                      {col.accessor(row)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-xs font-semibold uppercase tracking-wider text-[#788a9a] dark:border-white/10">

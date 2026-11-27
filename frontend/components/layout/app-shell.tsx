@@ -12,6 +12,7 @@ import { mapMenuOutcomeToHref } from "@/lib/permissions";
 import type { MenuNode } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import {
   Activity,
   BarChart3,
@@ -33,11 +34,13 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Menu,
   Moon,
   Package,
   Receipt,
   ShieldCheck,
   ShoppingCart,
+  Smartphone,
   Sun,
   Timer,
   Truck,
@@ -47,6 +50,7 @@ import {
   Wallet,
   Warehouse,
   Wifi,
+  X,
 } from "lucide-react";
 
 const PROFILE_MENU_ITEMS = [
@@ -86,6 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, logout, refreshProfile } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
   const [profileMenuOpen, setProfileMenuOpen] = useState(true);
@@ -147,14 +152,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         darkMode ? "bg-[#222131] text-white" : "bg-[#f1f4fa] text-[#06152b]"
       )}
     >
-      {/* Figma-style Sidebar */}
+      {/* Mobile Backdrop */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+        />
+      )}
+
+      {/* Figma-style Responsive Sidebar (Drawer on mobile, fixed rail on desktop) */}
       <aside
         className={cn(
-          "flex flex-col transition-all duration-200 border-r",
+          "fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-200 border-r md:static md:translate-x-0",
           darkMode
             ? "bg-[#39394b] border-white/10 text-white"
             : "bg-white border-slate-200/70 text-[#06152b]",
-          collapsed ? "w-20" : "w-64"
+          collapsed ? "w-20" : "w-64",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-18 items-center justify-between px-4">
@@ -418,7 +432,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         {!collapsed && !isTauriRuntime() && (
-          <div className="mx-3 mb-2">
+          <div className="mx-3 mb-2 space-y-1.5">
             <button
               type="button"
               onClick={async () => {
@@ -432,19 +446,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     a.click();
                     a.remove();
                   } else {
-                    toast.info(
-                      "Installer NEOCRA-setup.exe belum di-build/diunggah ke server. Build di Windows (cargo tauri build) atau GitHub Actions (build-desktop.yml), lalu simpan ke frontend/public/downloads/NEOCRA-setup.exe."
-                    );
+                    toast.info("Installer NEOCRA-setup.exe belum tersedia di server.");
                   }
                 } catch {
                   toast.error("Gagal memeriksa file installer NEOCRA-setup.exe");
                 }
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3a36db] px-3 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#2f2bc2]"
-              title="Download Aplikasi Desktop NEOCRA (.exe)"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3a36db] px-3 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#2f2bc2]"
+              title="Download Aplikasi Desktop Windows (.exe)"
             >
               <Download size={14} />
               <span>Download NEOCRA.exe</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/downloads/NEOCRA-android.apk", { method: "HEAD" });
+                  if (res.ok) {
+                    const a = document.createElement("a");
+                    a.href = "/downloads/NEOCRA-android.apk";
+                    a.download = "NEOCRA-android.apk";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                  } else {
+                    toast.info(
+                      "Installer Android NEOCRA-android.apk belum diunggah ke /root/NEOCRA/downloads/NEOCRA-android.apk. Jalankan workflow build-android.yml di GitHub Actions terlebih dahulu."
+                    );
+                  }
+                } catch {
+                  toast.error("Gagal memeriksa file NEOCRA-android.apk");
+                }
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-emerald-700"
+              title="Download Aplikasi Android NEOCRA (.apk)"
+            >
+              <Smartphone size={14} />
+              <span>Download NEOCRA.apk</span>
             </button>
           </div>
         )}
@@ -481,14 +521,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Topbar */}
         <header
           className={cn(
-            "flex h-16 items-center justify-between px-6 border-b transition-colors",
+            "flex h-14 md:h-16 items-center justify-between px-4 md:px-6 border-b transition-colors pt-[env(safe-area-inset-top)]",
             darkMode
               ? "bg-[#39394b]/80 border-white/10"
               : "bg-white/80 backdrop-blur border-slate-200/70"
           )}
         >
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setMobileOpen((v) => !v)}
+              className={cn(
+                "rounded-xl p-2 md:hidden",
+                darkMode
+                  ? "bg-[#222131] text-white"
+                  : "bg-[#f1f4fa] text-[#06152b]"
+              )}
+              aria-label="Toggle Menu"
+            >
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+            <span className="text-xs sm:text-sm font-bold truncate">
               PT. Cahaya Resource Abadi
             </span>
             <span className="hidden sm:inline-flex rounded-full bg-[#605cff]/10 px-2.5 py-0.5 text-xs font-semibold text-[#605cff]">
@@ -525,7 +578,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6">{children}</main>
+        <MobileBottomNav darkMode={darkMode} />
       </div>
     </div>
   );

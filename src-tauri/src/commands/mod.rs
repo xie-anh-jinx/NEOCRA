@@ -133,7 +133,7 @@ pub async fn save_offline_session(
         &payload.user_json,
         &payload.menus_json,
     )?;
-    store_token(&payload.username, &payload.token);
+    store_token(&state.app_dir, &payload.username, &payload.token);
     let mut tk = state.active_token.write().await;
     *tk = Some(payload.token);
     Ok(())
@@ -176,6 +176,86 @@ pub async fn offline_login(
 pub async fn list_plugins(state: State<'_, DesktopState>) -> Result<Vec<PluginManifest>, String> {
     let cfg = state.config.read().await;
     Ok(default_plugins(&cfg.enabled_plugins))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AndroidUpdateManifest {
+    pub version: String,
+    pub version_code: u32,
+    pub apk_url: String,
+    pub changelog: String,
+    pub force_update: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AndroidUpdateCheckResult {
+    pub current_version: String,
+    pub current_version_code: u32,
+    pub update_available: bool,
+    pub latest: Option<AndroidUpdateManifest>,
+}
+
+#[tauri::command]
+pub async fn check_android_update(
+    state: State<'_, DesktopState>,
+) -> Result<AndroidUpdateCheckResult, String> {
+    const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+    const CURRENT_VERSION_CODE: u32 = 1;
+
+    let url = "https://neocra.pengajaran.com/downloads/android-version.json";
+    let resp = state
+        .monitor
+        .http
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| format!("Gagal cek update Android: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Ok(AndroidUpdateCheckResult {
+            current_version: CURRENT_VERSION.to_string(),
+            current_version_code: CURRENT_VERSION_CODE,
+            update_available: false,
+            latest: None,
+        });
+    }
+
+    let manifest = resp
+        .json::<AndroidUpdateManifest>()
+        .await
+        .map_err(|e| format!("Manifest update tidak valid: {}", e))?;
+
+    let update_available = manifest.version_code > CURRENT_VERSION_CODE;
+    Ok(AndroidUpdateCheckResult {
+        current_version: CURRENT_VERSION.to_string(),
+        current_version_code: CURRENT_VERSION_CODE,
+        update_available,
+        latest: Some(manifest),
+    })
+}
+
+#[tauri::command]
+pub fn get_runtime_platform() -> &'static str {
+    #[cfg(target_os = "android")]
+    {
+        return "android";
+    }
+    #[cfg(target_os = "ios")]
+    {
+        return "ios";
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return "windows";
+    }
+    #[cfg(target_os = "macos")]
+    {
+        return "macos";
+    }
+    #[cfg(target_os = "linux")]
+    {
+        return "linux";
+    }
 }
 
 #[tauri::command]

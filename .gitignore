@@ -25,3 +25,10 @@ frontend/out/
 # DB dumps
 *.sql.gz
 *.dump
+
+# Desktop & Android installers hosted on VPS
+downloads/*.exe
+downloads/*.msi
+downloads/*.apk
+downloads/*.aab
+downloads/*.zip

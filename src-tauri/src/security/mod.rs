@@ -5,26 +5,30 @@ use argon2::{
     },
     Argon2,
 };
-use keyring::Entry;
 use std::fs;
 use std::path::PathBuf;
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 const SERVICE_NAME: &str = "com.cra.neocra.desktop";
 
 pub fn get_or_create_db_key(app_dir: &PathBuf) -> String {
-    if let Ok(entry) = Entry::new(SERVICE_NAME, "sqlcipher_db_key") {
-        if let Ok(pw) = entry.get_password() {
-            if !pw.is_empty() {
-                return pw;
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        if let Ok(entry) = keyring::Entry::new(SERVICE_NAME, "sqlcipher_db_key") {
+            if let Ok(pw) = entry.get_password() {
+                if !pw.is_empty() {
+                    return pw;
+                }
             }
-        }
-        let key = generate_random_hex(32);
-        if entry.set_password(&key).is_ok() {
-            return key;
+            let key = generate_random_hex(32);
+            if entry.set_password(&key).is_ok() {
+                return key;
+            }
         }
     }
 
-    // Fallback local key file when OS keyring daemon is unavailable (e.g. headless CI)
+    // Android/iOS sandboxed private app storage (or headless desktop fallback)
+    let _ = fs::create_dir_all(app_dir);
     let fallback_path = app_dir.join(".db_key");
     if let Ok(existing) = fs::read_to_string(&fallback_path) {
         if !existing.trim().is_empty() {
@@ -36,22 +40,44 @@ pub fn get_or_create_db_key(app_dir: &PathBuf) -> String {
     key
 }
 
-pub fn store_token(username: &str, token: &str) {
-    if let Ok(entry) = Entry::new(SERVICE_NAME, &format!("token_{}", username)) {
-        let _ = entry.set_password(token);
+pub fn store_token(app_dir: &PathBuf, username: &str, token: &str) {
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        if let Ok(entry) = keyring::Entry::new(SERVICE_NAME, &format!("token_{}", username)) {
+            if entry.set_password(token).is_ok() {
+                return;
+            }
+        }
     }
+    let tokens_dir = app_dir.join(".tokens");
+    let _ = fs::create_dir_all(&tokens_dir);
+    let _ = fs::write(tokens_dir.join(sanitize_key(username)), token);
 }
 
-pub fn load_token(username: &str) -> Option<String> {
-    Entry::new(SERVICE_NAME, &format!("token_{}", username))
+pub fn load_token(app_dir: &PathBuf, username: &str) -> Option<String> {
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        if let Some(pw) = keyring::Entry::new(SERVICE_NAME, &format!("token_{}", username))
+            .ok()
+            .and_then(|e| e.get_password().ok())
+        {
+            return Some(pw);
+        }
+    }
+    fs::read_to_string(app_dir.join(".tokens").join(sanitize_key(username)))
         .ok()
-        .and_then(|e| e.get_password().ok())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
-pub fn clear_token(username: &str) {
-    if let Ok(entry) = Entry::new(SERVICE_NAME, &format!("token_{}", username)) {
-        let _ = entry.delete_credential();
+pub fn clear_token(app_dir: &PathBuf, username: &str) {
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        if let Ok(entry) = keyring::Entry::new(SERVICE_NAME, &format!("token_{}", username)) {
+            let _ = entry.delete_credential();
+        }
     }
+    let _ = fs::remove_file(app_dir.join(".tokens").join(sanitize_key(username)));
 }
 
 pub fn hash_offline_password(password: &str) -> Result<String, String> {
@@ -71,6 +97,12 @@ pub fn verify_offline_password(password: &str, hash: &str) -> bool {
                 .is_ok()
         })
         .unwrap_or(false)
+}
+
+fn sanitize_key(s: &str) -> String {
+    s.chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .collect()
 }
 
 fn generate_random_hex(bytes_len: usize) -> String {
