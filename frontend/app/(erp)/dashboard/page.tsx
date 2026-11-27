@@ -125,84 +125,96 @@ export default function DashboardPage() {
     data.pending.sales_orders;
 
   return (
-    <div className="space-y-6">
-      {/* Header Row matching Figma "Dashboard" 24px Bold + Action Buttons */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4">
+      {/* Header Row */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-xs text-[#788a9a]">
+          <h1 className="text-lg font-bold tracking-tight">Dashboard</h1>
+          <p className="text-[11px] text-[#788a9a] dark:text-[#a1a0b8]">
             Ringkasan operasional, tren penjualan &amp; pembelian, serta dokumen persetujuan
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Link
             href="/purchasing/orders/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#3a36db] px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-[#3a36db]/20 hover:bg-[#2f2bc2] transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg bg-[#3a36db] px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm shadow-[#3a36db]/20 hover:bg-[#2f2bc2] transition-colors"
           >
             + Buat PO Baru
           </Link>
           <Link
             href="/sales/orders/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-[#06152b] shadow-xs hover:bg-slate-50 dark:bg-[#39394b] dark:text-white dark:hover:bg-white/10 transition-colors"
+            className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-[11px] font-semibold text-[#06152b] shadow-xs hover:bg-slate-50 dark:bg-[#39394b] dark:text-white dark:hover:bg-white/10 transition-colors"
           >
             + Buat SO Baru
           </Link>
         </div>
       </div>
 
-      {/* Top 4 Analytics Cards (Figma style: white card, 60px circular soft tinted icon) */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-xs dark:bg-[#39394b]">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#605cff]/12 text-[#605cff]">
-            <TrendingUp size={24} />
+      {/* Top 4 Analytics Cards (Compact Desktop Layout) */}
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-xs dark:bg-[#39394b]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#605cff]/12 text-[#605cff]">
+            <TrendingUp size={18} />
           </div>
-          <div className="min-w-0">
-            <div className="text-lg font-bold truncate">
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-sm font-bold leading-snug tabular-nums"
+              title={formatIDR(data.this_month.invoices_value)}
+            >
               {formatIDR(data.this_month.invoices_value)}
             </div>
-            <div className="text-xs font-medium text-[#788a9a]">
+            <div className="text-[11px] font-medium text-[#788a9a] dark:text-[#a1a0b8]">
               Penjualan Bulan Ini ({data.this_month.sales_orders_count} SO)
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-xs dark:bg-[#39394b]">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#2ee5a7]/15 text-emerald-600">
-            <ShoppingBag size={24} />
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-xs dark:bg-[#39394b]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2ee5a7]/15 text-emerald-600">
+            <ShoppingBag size={18} />
           </div>
-          <div className="min-w-0">
-            <div className="text-lg font-bold truncate">
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-sm font-bold leading-snug tabular-nums"
+              title={formatIDR(data.this_month.purchase_orders_value)}
+            >
               {formatIDR(data.this_month.purchase_orders_value)}
             </div>
-            <div className="text-xs font-medium text-[#788a9a]">
+            <div className="text-[11px] font-medium text-[#788a9a] dark:text-[#a1a0b8]">
               Pembelian (PO) Bulan Ini
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-xs dark:bg-[#39394b]">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#ff69b4]/15 text-[#ff69b4]">
-            <Wallet size={24} />
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-xs dark:bg-[#39394b]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ff69b4]/15 text-[#ff69b4]">
+            <Wallet size={18} />
           </div>
-          <div className="min-w-0">
-            <div className="text-lg font-bold truncate">
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-sm font-bold leading-snug tabular-nums"
+              title={formatIDR(data.outstanding.ar)}
+            >
               {formatIDR(data.outstanding.ar)}
             </div>
-            <div className="text-xs font-medium text-[#788a9a]">
+            <div className="text-[11px] font-medium text-[#788a9a] dark:text-[#a1a0b8]">
               Piutang Usaha (AR)
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-xs dark:bg-[#39394b]">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#3a36db]/12 text-[#3a36db]">
-            <CreditCard size={24} />
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-xs dark:bg-[#39394b]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3a36db]/12 text-[#3a36db] dark:text-[#8b88ff]">
+            <CreditCard size={18} />
           </div>
-          <div className="min-w-0">
-            <div className="text-lg font-bold truncate">
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-sm font-bold leading-snug tabular-nums"
+              title={formatIDR(data.outstanding.ap)}
+            >
               {formatIDR(data.outstanding.ap)}
             </div>
-            <div className="text-xs font-medium text-[#788a9a]">
+            <div className="text-[11px] font-medium text-[#788a9a] dark:text-[#a1a0b8]">
               Hutang Usaha (AP)
             </div>
           </div>
@@ -210,29 +222,29 @@ export default function DashboardPage() {
       </div>
 
       {/* Middle Row: Reports (7 cols) + Analytics Donut (5 cols) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* Reports Chart */}
-        <div className="rounded-2xl bg-white p-6 shadow-xs dark:bg-[#39394b] lg:col-span-7">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="rounded-xl bg-white p-4 shadow-xs dark:bg-[#39394b] lg:col-span-7">
+          <div className="mb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Reports (Tren 12 Bulan)</h2>
-              <p className="text-xs text-[#788a9a]">
+              <h2 className="text-sm font-bold">Reports (Tren 12 Bulan)</h2>
+              <p className="text-[11px] text-[#788a9a] dark:text-[#a1a0b8]">
                 Perbandingan Nilai Penjualan vs Purchase Order (dalam Miliar Rp)
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-medium">
+            <div className="flex items-center gap-3 text-[11px] font-medium">
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#605cff]" />
+                <span className="h-2 w-2 rounded-full bg-[#605cff]" />
                 Penjualan
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ff69b4]" />
+                <span className="h-2 w-2 rounded-full bg-[#ff69b4]" />
                 Pembelian
               </span>
             </div>
           </div>
 
-          <div className="h-72 w-full">
+          <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
                 <defs>
@@ -294,31 +306,31 @@ export default function DashboardPage() {
         </div>
 
         {/* Analytics Donut Chart */}
-        <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-xs dark:bg-[#39394b] lg:col-span-5">
+        <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-xs dark:bg-[#39394b] lg:col-span-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Analytics</h2>
-              <p className="text-xs text-[#788a9a]">
+              <h2 className="text-sm font-bold">Analytics</h2>
+              <p className="text-[11px] text-[#788a9a] dark:text-[#a1a0b8]">
                 Antrean Dokumen Menunggu Proses
               </p>
             </div>
             <Link
               href="/purchasing/orders?status=checked"
-              className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
+              className="text-[11px] font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
             >
               Lihat Semua
             </Link>
           </div>
 
-          <div className="relative h-56 w-full flex items-center justify-center">
+          <div className="relative h-48 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={analyticsData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={62}
-                  outerRadius={88}
+                  innerRadius={54}
+                  outerRadius={76}
                   paddingAngle={4}
                   dataKey="value"
                 >
@@ -330,47 +342,47 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold">{totalPendingDocs}</div>
-              <div className="text-[11px] font-medium text-[#788a9a]">
+              <div className="text-lg font-bold">{totalPendingDocs}</div>
+              <div className="text-[10px] font-medium text-[#788a9a] dark:text-[#a1a0b8]">
                 Dokumen Aktif
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
+          <div className="grid grid-cols-3 gap-2 pt-2 text-center text-[11px]">
             <Link
               href="/purchasing/requests?status=pending"
-              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
+              className="rounded-lg bg-[#f1f4fa] p-2 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
             >
-              <div className="flex items-center justify-center gap-1.5 font-semibold">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#3a36db]" />
+              <div className="flex items-center justify-center gap-1 font-semibold">
+                <span className="h-2 w-2 rounded-full bg-[#3a36db]" />
                 PP
               </div>
-              <div className="mt-1 text-base font-bold">
+              <div className="mt-0.5 text-sm font-bold">
                 {data.pending.purchase_requests}
               </div>
             </Link>
             <Link
               href="/purchasing/orders?status=checked"
-              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
+              className="rounded-lg bg-[#f1f4fa] p-2 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
             >
-              <div className="flex items-center justify-center gap-1.5 font-semibold">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#2ee5a7]" />
+              <div className="flex items-center justify-center gap-1 font-semibold">
+                <span className="h-2 w-2 rounded-full bg-[#2ee5a7]" />
                 PO
               </div>
-              <div className="mt-1 text-base font-bold">
+              <div className="mt-0.5 text-sm font-bold">
                 {data.pending.purchase_orders}
               </div>
             </Link>
             <Link
               href="/sales/orders?status=S"
-              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
+              className="rounded-lg bg-[#f1f4fa] p-2 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
             >
-              <div className="flex items-center justify-center gap-1.5 font-semibold">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ff69b4]" />
+              <div className="flex items-center justify-center gap-1 font-semibold">
+                <span className="h-2 w-2 rounded-full bg-[#ff69b4]" />
                 SO
               </div>
-              <div className="mt-1 text-base font-bold">
+              <div className="mt-0.5 text-sm font-bold">
                 {data.pending.sales_orders}
               </div>
             </Link>
@@ -379,48 +391,48 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom Row: Recent Orders (7 cols) + Top Selling Products (5 cols) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* Recent Orders Table */}
-        <div className="rounded-2xl bg-white p-6 shadow-xs dark:bg-[#39394b] lg:col-span-7">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent Orders (Sales Order)</h2>
+        <div className="rounded-xl bg-white p-4 shadow-xs dark:bg-[#39394b] lg:col-span-7">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-bold">Recent Orders (Sales Order)</h2>
             <Link
               href="/sales/orders"
-              className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
+              className="text-[11px] font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
             >
               Semua Order →
             </Link>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-white/10 text-xs font-semibold text-[#788a9a]">
-                  <th className="pb-3">Nomor SO</th>
-                  <th className="pb-3">Customer</th>
-                  <th className="pb-3">Tanggal</th>
-                  <th className="pb-3 text-right">Total</th>
-                  <th className="pb-3 text-right">Status</th>
+                <tr className="border-b border-slate-100 dark:border-white/10 text-[11px] font-semibold text-[#788a9a]">
+                  <th className="pb-2">Nomor SO</th>
+                  <th className="pb-2">Customer</th>
+                  <th className="pb-2">Tanggal</th>
+                  <th className="pb-2 text-right">Total</th>
+                  <th className="pb-2 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/70 dark:divide-white/10">
                 {(recentSo?.data || []).map((so) => (
                   <tr key={so.nomor} className="hover:bg-[#f1f4fa]/60 dark:hover:bg-white/5">
-                    <td className="py-3 font-mono text-xs font-bold text-[#3a36db] dark:text-[#8b88ff]">
+                    <td className="py-2 font-mono text-[11px] font-bold text-[#3a36db] dark:text-[#8b88ff]">
                       <Link href={`/sales/orders/detail?id=${encodeURIComponent(so.nomor)}`}>
                         {so.nomor}
                       </Link>
                     </td>
-                    <td className="py-3 font-medium truncate max-w-[180px]">
+                    <td className="py-2 font-medium truncate max-w-[160px]">
                       {so.customer || so.id_customer}
                     </td>
-                    <td className="py-3 text-xs text-[#788a9a]">
+                    <td className="py-2 text-[11px] text-[#788a9a]">
                       {formatDateID(so.tanggal)}
                     </td>
-                    <td className="py-3 text-right font-mono text-xs font-bold">
+                    <td className="py-2 text-right font-mono text-[11px] font-bold">
                       {formatIDR(so.grandtotal)}
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-2 text-right">
                       <StatusBadge status={so.status_label} />
                     </td>
                   </tr>
@@ -431,38 +443,38 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Selling Products */}
-        <div className="rounded-2xl bg-white p-6 shadow-xs dark:bg-[#39394b] lg:col-span-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Top Selling Products</h2>
+        <div className="rounded-xl bg-white p-4 shadow-xs dark:bg-[#39394b] lg:col-span-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-bold">Top Selling Products</h2>
             <Link
               href="/inventory/stock"
-              className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
+              className="text-[11px] font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
             >
               Cek Stok →
             </Link>
           </div>
 
-          <div className="space-y-3.5">
+          <div className="space-y-2.5">
             {data.top_items.slice(0, 5).map((item, idx) => (
               <div
                 key={item.id_barang}
-                className="flex items-center justify-between rounded-xl bg-[#f1f4fa]/70 p-3 dark:bg-[#222131]"
+                className="flex items-center justify-between rounded-lg bg-[#f1f4fa]/70 p-2.5 dark:bg-[#222131]"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#3a36db] dark:bg-[#39394b] dark:text-[#8b88ff] shadow-xs">
-                    {idx % 2 === 0 ? <Package size={18} /> : <Boxes size={18} />}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#3a36db] dark:bg-[#39394b] dark:text-[#8b88ff] shadow-xs">
+                    {idx % 2 === 0 ? <Package size={15} /> : <Boxes size={15} />}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate">
+                    <div className="text-xs font-semibold truncate">
                       {item.nama_barang}
                     </div>
-                    <div className="text-[11px] font-mono text-[#788a9a]">
+                    <div className="text-[10px] font-mono text-[#788a9a]">
                       {item.id_barang}
                     </div>
                   </div>
                 </div>
                 <div className="text-right shrink-0 pl-2">
-                  <div className="text-xs font-bold text-[#3a36db] dark:text-[#8b88ff]">
+                  <div className="text-[11px] font-bold text-[#3a36db] dark:text-[#8b88ff]">
                     {formatNumber(item.qty)}
                   </div>
                   <div className="text-[10px] text-[#788a9a]">Unit Terjual</div>
@@ -474,28 +486,28 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Customers */}
-      <div className="rounded-2xl bg-white p-6 shadow-xs dark:bg-[#39394b]">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Top Customers</h2>
+      <div className="rounded-xl bg-white p-4 shadow-xs dark:bg-[#39394b]">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-bold">Top Customers</h2>
           <Link
             href="/master/customers"
-            className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
+            className="text-[11px] font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
           >
             Master Customer →
           </Link>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {data.top_customers.slice(0, 4).map((c, idx) => (
             <div
               key={c.id_customer}
-              className="rounded-xl bg-[#f1f4fa] p-4 dark:bg-[#222131]"
+              className="rounded-lg bg-[#f1f4fa] p-3 dark:bg-[#222131]"
             >
-              <div className="flex items-center justify-between text-xs text-[#788a9a]">
+              <div className="flex items-center justify-between text-[10px] text-[#788a9a]">
                 <span>#{idx + 1}</span>
                 <span className="font-mono">{c.id_customer}</span>
               </div>
-              <div className="mt-1.5 text-sm font-bold truncate">{c.customer}</div>
-              <div className="mt-2 font-mono text-xs font-bold text-[#3a36db] dark:text-[#8b88ff]">
+              <div className="mt-1 text-xs font-bold truncate">{c.customer}</div>
+              <div className="mt-1 font-mono text-[11px] font-bold text-[#3a36db] dark:text-[#8b88ff]">
                 {formatIDR(c.total)}
               </div>
             </div>
