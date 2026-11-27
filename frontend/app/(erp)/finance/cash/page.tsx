@@ -6,7 +6,7 @@ import { apiFetch } from "@/services/api";
 import type { CashTransactionRow, PaginatedResponse } from "@/types";
 import { ErpTable } from "@/components/data-table/erp-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDateID, formatIDR } from "@/lib/utils";
+import { formatDateID, formatIDR, stripHtmlToText } from "@/lib/utils";
 
 export default function FinanceCashPage() {
   const [page, setPage] = useState(1);
@@ -62,7 +62,7 @@ export default function FinanceCashPage() {
         {
           header: "Uraian",
           accessor: (r) => (
-            <span className="line-clamp-1 max-w-md">{r.uraian || "-"}</span>
+            <span className="line-clamp-1 max-w-md">{stripHtmlToText(r.uraian, true)}</span>
           ),
         },
         {

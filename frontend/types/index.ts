@@ -23,6 +23,7 @@ export interface UserProfile {
   kantor: string | null;
   branches: string[];
   warehouses: string[];
+  avatar_url?: string | null;
 }
 
 export interface LoginResponse {

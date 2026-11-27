@@ -5,6 +5,11 @@ import { Providers } from "@/hooks/use-auth";
 export const metadata: Metadata = {
   title: "NEOCRA ERP — PT. Cahaya Resource Abadi",
   description: "Corporate Resource Application (NEOCRA v1) — Rust Axum & Next.js ERP",
+  icons: {
+    icon: "/logo-cra.png",
+    shortcut: "/logo-cra.png",
+    apple: "/logo-cra.png",
+  },
 };
 
 export default function RootLayout({

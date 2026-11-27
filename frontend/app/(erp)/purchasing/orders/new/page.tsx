@@ -42,7 +42,7 @@ export default function NewPurchaseOrderPage() {
       }),
     onSuccess: (res) => {
       toast.success(`PO ${res.nomor_po} berhasil dibuat`);
-      router.push(`/purchasing/orders/${res.id}`);
+      router.push(`/purchasing/orders/detail?id=${res.id}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });

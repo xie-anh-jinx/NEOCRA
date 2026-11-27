@@ -1,0 +1,43 @@
+name: Build NEOCRA Desktop (Windows .exe)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri Windows Installer (NEOCRA.exe)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_BUILD: "true"
+          NEXT_PUBLIC_API_URL: https://neocra.pengajaran.com
+          NEXT_PUBLIC_FASTAPI_URL: https://warehouse.pengajaran.com/api
+        with:
+          projectPath: src-tauri
+          tagName: v__VERSION__
+          releaseName: "NEOCRA Desktop v__VERSION__"
+          releaseDraft: true
+          prerelease: false

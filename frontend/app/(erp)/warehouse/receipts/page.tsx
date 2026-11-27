@@ -40,7 +40,7 @@ export default function WarehouseReceiptsPage() {
       }}
       loading={isLoading}
       onRowClick={(r) =>
-        router.push(`/warehouse/receipts/${encodeURIComponent(r.no_penerimaan)}`)
+        router.push(`/warehouse/receipts/detail?id=${encodeURIComponent(r.no_penerimaan)}`)
       }
       columns={[
         {

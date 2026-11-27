@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/types";
+import type { MenuNode, UserProfile } from "@/types";
 
 export interface NavItem {
   label: string;
@@ -63,6 +63,12 @@ export const ERP_NAVIGATION: NavGroup[] = [
       { label: "Kas & Bank", href: "/finance/cash", roles: ["ROLE_KASMASUK", "ROLE_KASKELUAR", "ROLE_ACCKAS"] },
     ],
   },
+  {
+    group: "Sistem & Keamanan",
+    items: [
+      { label: "Pengguna & Hak Akses", href: "/system/users", roles: ["ROLE_ADMIN"] },
+    ],
+  },
 ];
 
 export function canAccessNav(user: UserProfile | null, item: NavItem): boolean {
@@ -70,4 +76,58 @@ export function canAccessNav(user: UserProfile | null, item: NavItem): boolean {
   if (user.is_superadmin || user.roles.includes("ROLE_ADMIN")) return true;
   if (!item.roles || item.roles.length === 0) return true;
   return item.roles.some((r) => user.roles.includes(r));
+}
+
+const OUTCOME_ROUTE_MAP: Record<string, string> = {
+  "/dashboard": "/dashboard",
+  "/transaksi/pembelian/permintaan/list": "/purchasing/requests",
+  "/transaksi/pembelian/po/list": "/purchasing/orders",
+  "/transaksi/penjualan/so/list": "/sales/orders",
+  "/transaksi/penjualan/so/listgudang": "/sales/orders",
+  "/pengajuanso/list": "/sales/orders",
+  "/transaksi/penjualan/invoice/list": "/sales/invoices",
+  "/transaksi/penjualan/invoice/listadmin": "/sales/invoices",
+  "/gudang/penerimaan/list": "/warehouse/receipts",
+  "/gudang/penerimaan/po": "/warehouse/receipts",
+  "/transaksi/pembelian/penerimaan/list": "/warehouse/receipts",
+  "/transaksi/penjualan/do/list": "/warehouse/deliveries",
+  "/transaksi/penjualan/do/receiptdo": "/warehouse/deliveries",
+  "/master/barang/list": "/master/items",
+  "/master/supplier/list": "/master/suppliers",
+  "/master/customer/list": "/master/customers",
+  "/hr/pegawai/list": "/master/employees",
+  "/master/pegawai/list": "/master/employees",
+  "/report/stok": "/inventory/stock",
+  "/gudang/stok/list": "/inventory/stock",
+  "/report/kartustok": "/inventory/stock-card",
+  "/master/account/list": "/finance/accounts",
+  "/transaksi/penjualan/invoice/listar": "/finance/ar",
+  "/akuntansi/ap/list": "/finance/ap",
+  "/akuntansi/jurnalumum/list": "/finance/journals",
+  "/report/jurnal": "/finance/journals",
+  "/akuntansi/acckas_masuk/list.jsf": "/finance/cash",
+  "/akuntansi/acckas_keluar/list.jsf": "/finance/cash",
+  "/akuntansi/acckas/list.jsf": "/finance/cash",
+  "/akuntansi/acckas/add.jsf": "/finance/cash",
+  "/akuntansi/acckas_masuk/listacc.jsf": "/finance/cash",
+  "/akuntansi/acckas_keluar/listacc.jsf": "/finance/cash",
+  "/pengguna/list.jsf": "/system/users",
+};
+
+export function mapMenuOutcomeToHref(node: MenuNode): string {
+  const outcome = (node.outcome || "").trim();
+  if (!outcome) {
+    return `/module?name=${encodeURIComponent(node.name)}&id=${node.id}`;
+  }
+  const normalized = outcome.toLowerCase();
+  if (OUTCOME_ROUTE_MAP[normalized]) {
+    return OUTCOME_ROUTE_MAP[normalized];
+  }
+  const params = new URLSearchParams({
+    name: node.name,
+    outcome,
+    id: String(node.id),
+  });
+  if (node.roles) params.set("role", node.roles);
+  return `/module?${params.toString()}`;
 }

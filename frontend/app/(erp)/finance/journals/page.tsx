@@ -6,7 +6,7 @@ import { apiFetch } from "@/services/api";
 import type { JournalSummary, PaginatedResponse } from "@/types";
 import { ErpTable } from "@/components/data-table/erp-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDateID, formatIDR } from "@/lib/utils";
+import { formatDateID, formatIDR, stripHtmlToText } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export default function FinanceJournalsPage() {
@@ -40,7 +40,7 @@ export default function FinanceJournalsPage() {
       }}
       loading={isLoading}
       onRowClick={(r) =>
-        router.push(`/finance/journals/${encodeURIComponent(r.gl_number)}`)
+        router.push(`/finance/journals/detail?id=${encodeURIComponent(r.gl_number)}`)
       }
       columns={[
         {
@@ -70,7 +70,7 @@ export default function FinanceJournalsPage() {
         {
           header: "Uraian / Catatan",
           accessor: (r) => (
-            <span className="line-clamp-1 max-w-md">{r.note || "-"}</span>
+            <span className="line-clamp-1 max-w-md">{stripHtmlToText(r.note, true)}</span>
           ),
         },
         {

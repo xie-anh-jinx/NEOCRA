@@ -6,7 +6,7 @@ import { apiFetch } from "@/services/api";
 import type { PaginatedResponse, PurchaseRequestSummary } from "@/types";
 import { ErpTable } from "@/components/data-table/erp-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDateID, formatIDR } from "@/lib/utils";
+import { formatDateID, formatIDR, stripHtmlToText } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -43,7 +43,7 @@ export default function PurchaseRequestsPage() {
       }}
       loading={isLoading}
       onRowClick={(r) =>
-        router.push(`/purchasing/requests/${encodeURIComponent(r.no_pp)}`)
+        router.push(`/purchasing/requests/detail?id=${encodeURIComponent(r.no_pp)}`)
       }
       actions={
         <Link
@@ -88,7 +88,7 @@ export default function PurchaseRequestsPage() {
         {
           header: "Keterangan",
           accessor: (r) => (
-            <span className="line-clamp-1 max-w-xs">{r.keterangan || "-"}</span>
+            <span className="line-clamp-1 max-w-xs">{stripHtmlToText(r.keterangan, true)}</span>
           ),
         },
         {

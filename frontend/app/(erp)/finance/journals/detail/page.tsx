@@ -1,23 +1,19 @@
 "use client";
 
-import React, { use } from "react";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api";
 import type { JournalDetail } from "@/types";
-import { formatDateID, formatIDR } from "@/lib/utils";
+import { formatDateID, formatIDR, stripHtmlToText } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export default function JournalDetailPage({
-  params,
-}: {
-  params: Promise<{ gl_number: string }>;
-}) {
-  const { gl_number } = use(params);
-  const decoded = decodeURIComponent(gl_number);
-
-  const { data, isLoading } = useQuery({
+function JournalDetailPageContent() {
+  const searchParams = useSearchParams();
+  const decoded = searchParams.get("id") || "";
+const { data, isLoading } = useQuery({
     queryKey: ["journal-detail", decoded],
     queryFn: () =>
       apiFetch<JournalDetail>(
@@ -63,7 +59,8 @@ export default function JournalDetailPage({
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
         <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-3 text-xs text-slate-600">
-          <strong>Catatan:</strong> {data.note || "-"}
+          <strong>Catatan:</strong>
+          <div className="mt-1 whitespace-pre-line">{stripHtmlToText(data.note)}</div>
         </div>
         <table className="w-full text-left text-sm">
           <thead>
@@ -85,7 +82,7 @@ export default function JournalDetailPage({
                 </td>
                 <td className="px-4 py-3 font-medium">{l.account || "-"}</td>
                 <td className="px-4 py-3 text-xs text-slate-600">
-                  {l.keterangan || "-"}
+                  <span className="whitespace-pre-line">{stripHtmlToText(l.keterangan)}</span>
                 </td>
                 <td className="px-4 py-3 text-right font-mono text-emerald-700">
                   {l.is_debit ? formatIDR(l.value) : "-"}
@@ -110,5 +107,13 @@ export default function JournalDetailPage({
         </table>
       </div>
     </div>
+  );
+}
+
+export default function JournalDetailPagePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Memuat detail...</div>}>
+      <JournalDetailPageContent />
+    </Suspense>
   );
 }

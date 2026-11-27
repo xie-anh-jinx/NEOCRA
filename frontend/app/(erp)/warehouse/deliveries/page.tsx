@@ -40,7 +40,7 @@ export default function WarehouseDeliveriesPage() {
       }}
       loading={isLoading}
       onRowClick={(r) =>
-        router.push(`/warehouse/deliveries/${encodeURIComponent(r.nomor)}`)
+        router.push(`/warehouse/deliveries/detail?id=${encodeURIComponent(r.nomor)}`)
       }
       columns={[
         {

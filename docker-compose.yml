@@ -1,9 +1,27 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: neocra-postgres
+    environment:
+      POSTGRES_USER: bdcpa
+      POSTGRES_PASSWORD: "4znh.eW@,-"
+      POSTGRES_DB: cra
+    ports:
+      - "5435:5432"
+    volumes:
+      - neocra_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bdcpa -d cra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     container_name: neocra-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     restart: unless-stopped
 
   backend:
@@ -13,18 +31,13 @@ services:
     container_name: neocra-backend
     env_file:
       - ./backend/.env
-    environment:
-      # Uses the existing CRA PostgreSQL database on the host.
-      DATABASE_URL: ${DATABASE_URL:-postgres://bdcpa:change-me@host.docker.internal:5432/cra}
-      REDIS_URL: redis://redis:6379
-      PORT: 8080
-      CORS_ORIGINS: http://localhost:3000
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
-      - "8080:8080"
+      - "8082:8080"
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
@@ -32,12 +45,15 @@ services:
       context: ./frontend
       dockerfile: ../docker/frontend.Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_API_URL: https://neocra.pengajaran.com
     container_name: neocra-frontend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_API_URL: https://neocra.pengajaran.com
     ports:
-      - "3000:3000"
+      - "3010:3000"
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  neocra_pgdata:

@@ -1,23 +1,20 @@
 "use client";
 
-import React, { use } from "react";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api";
 import type { PurchaseRequestDetail } from "@/types";
-import { formatDateID, formatIDR, formatNumber } from "@/lib/utils";
+import { formatDateID, formatIDR, formatNumber, stripHtmlToText } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PurchaseRequestDetailPage({
-  params,
-}: {
-  params: Promise<{ no_pp: string }>;
-}) {
-  const { no_pp } = use(params);
-  const decodedNo = decodeURIComponent(no_pp);
-  const queryClient = useQueryClient();
+function PurchaseRequestDetailPageContent() {
+  const searchParams = useSearchParams();
+  const decodedNo = searchParams.get("id") || "";
+const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["pp-detail", decodedNo],
@@ -98,7 +95,8 @@ export default function PurchaseRequestDetailPage({
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
         <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-4 text-xs text-slate-600">
-          <strong>Keterangan:</strong> {data.keterangan || "-"}
+          <strong>Keterangan:</strong>
+          <div className="mt-1 whitespace-pre-line">{stripHtmlToText(data.keterangan)}</div>
         </div>
         <table className="w-full text-left text-sm">
           <thead>
@@ -121,7 +119,7 @@ export default function PurchaseRequestDetailPage({
                 </td>
                 <td className="px-4 py-3 font-medium">{d.nama_barang || "-"}</td>
                 <td className="px-4 py-3 text-xs text-slate-600">
-                  {d.keperluan || d.keterangan || "-"}
+                  <span className="whitespace-pre-line">{stripHtmlToText(d.keperluan || d.keterangan)}</span>
                 </td>
                 <td className="px-4 py-3 text-right font-mono">
                   {formatNumber(d.jumlah_order)} {d.satuan || ""}
@@ -138,5 +136,13 @@ export default function PurchaseRequestDetailPage({
         </table>
       </div>
     </div>
+  );
+}
+
+export default function PurchaseRequestDetailPagePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Memuat detail...</div>}>
+      <PurchaseRequestDetailPageContent />
+    </Suspense>
   );
 }

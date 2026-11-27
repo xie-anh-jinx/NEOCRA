@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Lock, ShieldCheck, User, BarChart3, Layers, Zap } from "lucide-react";
+import { Lock, User } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -30,9 +30,11 @@ export default function LoginPage() {
       <div className="flex w-full flex-col justify-center bg-white px-8 py-12 shadow-xl lg:w-[460px] lg:shrink-0 sm:px-12">
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#605cff] to-[#3a36db] text-xl font-bold text-white shadow-lg shadow-[#3a36db]/30">
-              CRA
-            </div>
+            <img
+              src="/logo-cra.png"
+              alt="PT. Cahaya Resources Abadi"
+              className="mb-4 h-20 w-auto object-contain"
+            />
             <h1 className="text-2xl font-bold tracking-tight text-[#06152b]">
               Masuk ke NEOCRA
             </h1>
@@ -90,57 +92,16 @@ export default function LoginPage() {
               {submitting ? "Memverifikasi..." : "Log in"}
             </button>
           </form>
-
-          <div className="mt-8 rounded-xl bg-[#f1f4fa] p-4 text-xs">
-            <div className="flex items-center gap-1.5 font-bold text-[#06152b]">
-              <ShieldCheck size={15} className="text-[#3a36db]" />
-              <span>Kredensial Superadmin</span>
-            </div>
-            <div className="mt-1.5 text-[#788a9a]">
-              Username: <code className="font-mono font-bold text-[#06152b]">superadmin</code>
-              <br />
-              Password: <code className="font-mono font-bold text-[#06152b]">superadmin123</code>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Right Illustration / Overview Panel (#f1f4fa) */}
-      <div className="hidden flex-1 flex-col items-center justify-center p-12 lg:flex">
-        <div className="max-w-lg space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-[#3a36db] shadow-xs">
-            <Zap size={14} /> Powered by Rust Axum + Next.js
-          </div>
-          <h2 className="text-4xl font-bold leading-tight text-[#06152b]">
-            Platform ERP Modern, Cepat &amp; Terintegrasi
-          </h2>
-          <p className="text-sm leading-relaxed text-[#788a9a]">
-            Mengelola seluruh rantai pasok distribusi pelumas &amp; bahan bakar:
-            Permintaan Pembelian, Purchase Order, Sales Order, Gudang, Stok
-            Batch, hingga Akuntansi &amp; Keuangan dalam satu sistem API-first.
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-white p-5 shadow-xs">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#605cff]/10 text-[#605cff]">
-                <BarChart3 size={20} />
-              </div>
-              <div className="text-sm font-bold">Analitik Real-Time</div>
-              <div className="mt-1 text-xs text-[#788a9a]">
-                Pantau omzet penjualan, PO, piutang AR, dan hutang AP secara langsung.
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white p-5 shadow-xs">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#2ee5a7]/15 text-emerald-600">
-                <Layers size={20} />
-              </div>
-              <div className="text-sm font-bold">Database Terpadu</div>
-              <div className="mt-1 text-xs text-[#788a9a]">
-                Berjalan selaras di atas database PostgreSQL CRA dengan audit log &amp; event outbox.
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Right Illustration Panel */}
+      <div className="relative hidden flex-1 lg:block">
+        <img
+          src="/balikpapan.jpg"
+          alt="Gudang Balikpapan PT. Cahaya Resources Abadi"
+          className="h-full w-full object-cover"
+        />
       </div>
     </div>
   );

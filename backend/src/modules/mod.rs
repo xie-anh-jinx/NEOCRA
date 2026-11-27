@@ -5,5 +5,6 @@ pub mod master;
 pub mod purchasing;
 pub mod reporting;
 pub mod sales;
+pub mod sync;
 pub mod users;
 pub mod warehouse;

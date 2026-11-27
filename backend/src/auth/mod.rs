@@ -10,7 +10,7 @@ use argon2::{
 use axum::{
     extract::{FromRequestParts, State},
     http::{header::AUTHORIZATION, request::Parts},
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -105,6 +105,7 @@ pub struct UserProfile {
     pub kantor: Option<String>,
     pub branches: Vec<String>,
     pub warehouses: Vec<String>,
+    pub avatar_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -306,6 +307,15 @@ pub async fn load_user_profile(pool: &PgPool, username: &str) -> AppResult<UserP
     .fetch_all(pool)
     .await?;
 
+    let avatar_url: Option<String> = sqlx::query_scalar(
+        "SELECT avatar_data FROM neocra.user_avatars WHERE username = $1",
+    )
+    .bind(username)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
     Ok(UserProfile {
         username: row.usernamenya,
         nama: row.nama,
@@ -320,6 +330,7 @@ pub async fn load_user_profile(pool: &PgPool, username: &str) -> AppResult<UserP
         kantor: peg.as_ref().and_then(|p| p.kantor.clone()),
         branches,
         warehouses,
+        avatar_url,
     })
 }
 
@@ -422,18 +433,30 @@ pub async fn menus_handler(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> AppResult<Json<Vec<MenuNode>>> {
-    let rows = sqlx::query_as::<_, MenuRow>(
-        r#"
-        SELECT a.id, a.name, a.icon, a.outcome, a.urut, a.parent, a.roles
-        FROM menu a
-        INNER JOIN hakakses b ON a.id = b.id_menu
-        WHERE b.usernamenya = $1
-        ORDER BY COALESCE(a.urut, 9999), a.id
-        "#,
-    )
-    .bind(&auth.username)
-    .fetch_all(&state.pool)
-    .await?;
+    let rows = if auth.username == "superadmin" {
+        sqlx::query_as::<_, MenuRow>(
+            r#"
+            SELECT id, name, icon, outcome, urut, parent, roles
+            FROM menu
+            ORDER BY COALESCE(urut, 9999), id
+            "#,
+        )
+        .fetch_all(&state.pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, MenuRow>(
+            r#"
+            SELECT a.id, a.name, a.icon, a.outcome, a.urut, a.parent, a.roles
+            FROM menu a
+            INNER JOIN hakakses b ON a.id = b.id_menu
+            WHERE b.usernamenya = $1
+            ORDER BY COALESCE(a.urut, 9999), a.id
+            "#,
+        )
+        .bind(&auth.username)
+        .fetch_all(&state.pool)
+        .await?
+    };
 
     let mut children_map: HashMap<i32, Vec<MenuRow>> = HashMap::new();
     let mut roots: Vec<MenuRow> = Vec::new();
@@ -535,10 +558,77 @@ pub async fn change_password_handler(
     Ok(Json(OkResponse { ok: true }))
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateAvatarRequest {
+    pub avatar_data: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AvatarResponse {
+    pub avatar_url: Option<String>,
+}
+
+pub async fn upload_avatar_handler(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<UpdateAvatarRequest>,
+) -> AppResult<Json<AvatarResponse>> {
+    let data = req.avatar_data.trim();
+    if !data.starts_with("data:image/") {
+        return Err(AppError::Validation(
+            "Format foto harus berupa gambar (PNG/JPG/WEBP)".into(),
+        ));
+    }
+    if data.len() > 3_000_000 {
+        return Err(AppError::Validation(
+            "Ukuran foto maksimal 2MB".into(),
+        ));
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO neocra.user_avatars (username, avatar_data, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (username) DO UPDATE SET avatar_data = EXCLUDED.avatar_data, updated_at = NOW()
+        "#,
+    )
+    .bind(&auth.username)
+    .bind(data)
+    .execute(&state.pool)
+    .await?;
+
+    write_audit_log(
+        &state.pool,
+        Some(&auth.username),
+        "auth.upload_avatar",
+        "pengguna",
+        Some(&auth.username),
+        serde_json::json!({}),
+    )
+    .await;
+
+    Ok(Json(AvatarResponse {
+        avatar_url: Some(data.to_string()),
+    }))
+}
+
+pub async fn delete_avatar_handler(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> AppResult<Json<AvatarResponse>> {
+    sqlx::query("DELETE FROM neocra.user_avatars WHERE username = $1")
+        .bind(&auth.username)
+        .execute(&state.pool)
+        .await?;
+
+    Ok(Json(AvatarResponse { avatar_url: None }))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/login", post(login_handler))
         .route("/me", get(me_handler))
         .route("/menus", get(menus_handler))
+        .route("/avatar", post(upload_avatar_handler).delete(delete_avatar_handler))
         .route("/change-password", post(change_password_handler))
 }

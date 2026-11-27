@@ -1,6 +1,7 @@
 "use client";
 
-import React, { use } from "react";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api";
 import type { PurchaseOrderDetail } from "@/types";
@@ -10,13 +11,10 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PurchaseOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
-  const queryClient = useQueryClient();
+function PurchaseOrderDetailPageContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") || "";
+const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["po-detail", id],
@@ -172,5 +170,13 @@ export default function PurchaseOrderDetailPage({
         </table>
       </div>
     </div>
+  );
+}
+
+export default function PurchaseOrderDetailPagePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Memuat detail...</div>}>
+      <PurchaseOrderDetailPageContent />
+    </Suspense>
   );
 }

@@ -160,11 +160,13 @@ pub fn build_router(state: AppState) -> Router {
                 header::AUTHORIZATION,
                 header::CONTENT_TYPE,
                 header::ACCEPT,
+                header::HeaderName::from_static("idempotency-key"),
             ])
             .allow_credentials(true)
     };
 
     let api_v1 = Router::new()
+        .route("/health", get(health_handler))
         .nest("/auth", auth::router())
         .nest("/users", modules::users::router())
         .nest("/company", modules::company::router())
@@ -174,7 +176,8 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/sales", modules::sales::router())
         .nest("/warehouse", modules::warehouse::router())
         .nest("/finance", modules::finance::router())
-        .nest("/reporting", modules::reporting::router());
+        .nest("/reporting", modules::reporting::router())
+        .nest("/sync", modules::sync::router());
 
     Router::new()
         .route("/health", get(health_handler))

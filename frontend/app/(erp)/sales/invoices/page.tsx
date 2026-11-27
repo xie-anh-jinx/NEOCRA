@@ -40,7 +40,7 @@ export default function SalesInvoicesPage() {
       }}
       loading={isLoading}
       onRowClick={(r) =>
-        router.push(`/sales/invoices/${encodeURIComponent(r.no_penjualan)}`)
+        router.push(`/sales/invoices/detail?id=${encodeURIComponent(r.no_penjualan)}`)
       }
       columns={[
         {

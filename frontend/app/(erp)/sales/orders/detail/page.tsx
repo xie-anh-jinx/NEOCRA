@@ -1,6 +1,7 @@
 "use client";
 
-import React, { use } from "react";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api";
 import type { SalesOrderDetail } from "@/types";
@@ -10,14 +11,10 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function SalesOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ nomor: string }>;
-}) {
-  const { nomor } = use(params);
-  const decodedNomor = decodeURIComponent(nomor);
-  const queryClient = useQueryClient();
+function SalesOrderDetailPageContent() {
+  const searchParams = useSearchParams();
+  const decodedNomor = searchParams.get("id") || "";
+const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["so-detail", decodedNomor],
@@ -157,5 +154,13 @@ export default function SalesOrderDetailPage({
         </table>
       </div>
     </div>
+  );
+}
+
+export default function SalesOrderDetailPagePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Memuat detail...</div>}>
+      <SalesOrderDetailPageContent />
+    </Suspense>
   );
 }

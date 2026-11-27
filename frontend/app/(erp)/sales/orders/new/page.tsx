@@ -39,7 +39,7 @@ export default function NewSalesOrderPage() {
       }),
     onSuccess: (res) => {
       toast.success(`SO ${res.nomor} berhasil dibuat`);
-      router.push(`/sales/orders/${encodeURIComponent(res.nomor)}`);
+      router.push(`/sales/orders/detail?id=${encodeURIComponent(res.nomor)}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });

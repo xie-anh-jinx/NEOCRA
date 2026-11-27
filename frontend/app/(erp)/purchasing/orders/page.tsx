@@ -42,7 +42,7 @@ export default function PurchaseOrdersPage() {
         setPage(1);
       }}
       loading={isLoading}
-      onRowClick={(r) => router.push(`/purchasing/orders/${r.id}`)}
+      onRowClick={(r) => router.push(`/purchasing/orders/detail?id=${r.id}`)}
       actions={
         <Link
           href="/purchasing/orders/new"

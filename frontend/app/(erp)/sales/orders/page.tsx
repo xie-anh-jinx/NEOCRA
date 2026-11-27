@@ -43,7 +43,7 @@ export default function SalesOrdersPage() {
       }}
       loading={isLoading}
       onRowClick={(r) =>
-        router.push(`/sales/orders/${encodeURIComponent(r.nomor)}`)
+        router.push(`/sales/orders/detail?id=${encodeURIComponent(r.nomor)}`)
       }
       actions={
         <Link

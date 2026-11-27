@@ -39,7 +39,7 @@ export default function NewPurchaseRequestPage() {
       }),
     onSuccess: (res) => {
       toast.success(`PP ${res.no_pp} berhasil dibuat`);
-      router.push(`/purchasing/requests/${encodeURIComponent(res.no_pp)}`);
+      router.push(`/purchasing/requests/detail?id=${encodeURIComponent(res.no_pp)}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });

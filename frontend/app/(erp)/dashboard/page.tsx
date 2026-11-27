@@ -143,7 +143,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/sales/orders/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-[#06152b] shadow-xs hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-[#06152b] shadow-xs hover:bg-slate-50 dark:bg-[#39394b] dark:text-white dark:hover:bg-white/10 transition-colors"
           >
             + Buat SO Baru
           </Link>
@@ -245,7 +245,7 @@ export default function DashboardPage() {
                     <stop offset="95%" stopColor="#ff69b4" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 11, fill: "#788a9a" }}
@@ -266,7 +266,9 @@ export default function DashboardPage() {
                   contentStyle={{
                     borderRadius: "12px",
                     border: "none",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                    backgroundColor: "#ffffff",
+                    color: "#06152b",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
                     fontSize: "12px",
                   }}
                 />
@@ -302,7 +304,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/purchasing/orders?status=checked"
-              className="text-xs font-semibold text-[#3a36db] hover:underline"
+              className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
             >
               Lihat Semua
             </Link>
@@ -338,7 +340,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
             <Link
               href="/purchasing/requests?status=pending"
-              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131]"
+              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
             >
               <div className="flex items-center justify-center gap-1.5 font-semibold">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#3a36db]" />
@@ -350,7 +352,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="/purchasing/orders?status=checked"
-              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131]"
+              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
             >
               <div className="flex items-center justify-center gap-1.5 font-semibold">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#2ee5a7]" />
@@ -362,7 +364,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="/sales/orders?status=S"
-              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131]"
+              className="rounded-xl bg-[#f1f4fa] p-2.5 hover:bg-slate-200/70 dark:bg-[#222131] dark:hover:bg-white/10"
             >
               <div className="flex items-center justify-center gap-1.5 font-semibold">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff69b4]" />
@@ -384,7 +386,7 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold">Recent Orders (Sales Order)</h2>
             <Link
               href="/sales/orders"
-              className="text-xs font-semibold text-[#3a36db] hover:underline"
+              className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
             >
               Semua Order →
             </Link>
@@ -393,7 +395,7 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-xs font-semibold text-[#788a9a]">
+                <tr className="border-b border-slate-100 dark:border-white/10 text-xs font-semibold text-[#788a9a]">
                   <th className="pb-3">Nomor SO</th>
                   <th className="pb-3">Customer</th>
                   <th className="pb-3">Tanggal</th>
@@ -401,11 +403,11 @@ export default function DashboardPage() {
                   <th className="pb-3 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100/70">
+              <tbody className="divide-y divide-slate-100/70 dark:divide-white/10">
                 {(recentSo?.data || []).map((so) => (
-                  <tr key={so.nomor} className="hover:bg-[#f1f4fa]/60">
-                    <td className="py-3 font-mono text-xs font-bold text-[#3a36db]">
-                      <Link href={`/sales/orders/${encodeURIComponent(so.nomor)}`}>
+                  <tr key={so.nomor} className="hover:bg-[#f1f4fa]/60 dark:hover:bg-white/5">
+                    <td className="py-3 font-mono text-xs font-bold text-[#3a36db] dark:text-[#8b88ff]">
+                      <Link href={`/sales/orders/detail?id=${encodeURIComponent(so.nomor)}`}>
                         {so.nomor}
                       </Link>
                     </td>
@@ -434,7 +436,7 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold">Top Selling Products</h2>
             <Link
               href="/inventory/stock"
-              className="text-xs font-semibold text-[#3a36db] hover:underline"
+              className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
             >
               Cek Stok →
             </Link>
@@ -447,7 +449,7 @@ export default function DashboardPage() {
                 className="flex items-center justify-between rounded-xl bg-[#f1f4fa]/70 p-3 dark:bg-[#222131]"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#3a36db] shadow-xs">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#3a36db] dark:bg-[#39394b] dark:text-[#8b88ff] shadow-xs">
                     {idx % 2 === 0 ? <Package size={18} /> : <Boxes size={18} />}
                   </div>
                   <div className="min-w-0">
@@ -460,7 +462,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="text-right shrink-0 pl-2">
-                  <div className="text-xs font-bold text-[#3a36db]">
+                  <div className="text-xs font-bold text-[#3a36db] dark:text-[#8b88ff]">
                     {formatNumber(item.qty)}
                   </div>
                   <div className="text-[10px] text-[#788a9a]">Unit Terjual</div>
@@ -477,7 +479,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold">Top Customers</h2>
           <Link
             href="/master/customers"
-            className="text-xs font-semibold text-[#3a36db] hover:underline"
+            className="text-xs font-semibold text-[#3a36db] dark:text-[#8b88ff] hover:underline"
           >
             Master Customer →
           </Link>
@@ -493,7 +495,7 @@ export default function DashboardPage() {
                 <span className="font-mono">{c.id_customer}</span>
               </div>
               <div className="mt-1.5 text-sm font-bold truncate">{c.customer}</div>
-              <div className="mt-2 font-mono text-xs font-bold text-[#3a36db]">
+              <div className="mt-2 font-mono text-xs font-bold text-[#3a36db] dark:text-[#8b88ff]">
                 {formatIDR(c.total)}
               </div>
             </div>

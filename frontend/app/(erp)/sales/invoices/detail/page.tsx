@@ -1,6 +1,7 @@
 "use client";
 
-import React, { use } from "react";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api";
 import type { SalesInvoiceDetail } from "@/types";
@@ -9,15 +10,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export default function SalesInvoiceDetailPage({
-  params,
-}: {
-  params: Promise<{ no_penjualan: string }>;
-}) {
-  const { no_penjualan } = use(params);
-  const decoded = decodeURIComponent(no_penjualan);
-
-  const { data, isLoading } = useQuery({
+function SalesInvoiceDetailPageContent() {
+  const searchParams = useSearchParams();
+  const decoded = searchParams.get("id") || "";
+const { data, isLoading } = useQuery({
     queryKey: ["invoice-detail", decoded],
     queryFn: () =>
       apiFetch<SalesInvoiceDetail>(
@@ -124,5 +120,13 @@ export default function SalesInvoiceDetailPage({
         </table>
       </div>
     </div>
+  );
+}
+
+export default function SalesInvoiceDetailPagePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Memuat detail...</div>}>
+      <SalesInvoiceDetailPageContent />
+    </Suspense>
   );
 }
