@@ -28,7 +28,8 @@ pub fn run() {
                 .app_data_dir()
                 .unwrap_or_else(|_| std::env::temp_dir().join("NEOCRA"));
 
-            let _guard = logging::init_logging(&app_dir);
+            let guard = logging::init_logging(&app_dir);
+            let _ = Box::leak(Box::new(guard));
             let cfg = DesktopConfig::load_or_create(&app_dir);
             let db_key = security::get_or_create_db_key(&app_dir);
             let db = Arc::new(LocalDb::open(&app_dir, &db_key)?);
