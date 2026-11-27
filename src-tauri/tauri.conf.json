@@ -6,7 +6,6 @@
   "build": {
     "beforeDevCommand": "pnpm --dir ../frontend dev",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "pnpm --dir ../frontend build",
     "frontendDist": "../frontend/out"
   },
   "app": {
@@ -38,13 +37,6 @@
         "displayLanguageSelector": false,
         "installMode": "currentUser"
       }
-    }
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://neocra.pengajaran.com/updates/{{target}}-{{arch}}/latest.json"
-      ]
     }
   }
 }
