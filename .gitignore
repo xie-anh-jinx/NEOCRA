@@ -15,6 +15,7 @@ src-tauri/target/
 
 # Node / Next.js
 frontend/node_modules/
+frontend/.pnpm-store/
 frontend/.next/
 frontend/out/
 
