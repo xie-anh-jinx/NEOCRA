@@ -37,6 +37,9 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
+      - name: Install Root Tauri CLI
+        run: npm install
+
       - name: Build Tauri Windows Installer (NEOCRA.exe)
         uses: tauri-apps/tauri-action@v0
         env:
