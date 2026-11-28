@@ -4,6 +4,10 @@ use crate::{
     events::DomainEvent,
     services::{
         audit::write_audit_log,
+        notifications::{
+            lookup_username_by_pegawai, mark_stage_action_taken, spawn_direct_notification,
+            spawn_stage_notification, NotificationSpec,
+        },
         numbering::{
             compute_line, compute_totals, next_po_number, next_pp_number, LineCalc,
         },
@@ -17,7 +21,7 @@ use axum::{
     Json, Router,
 };
 use chrono::NaiveDate;
-use percent_encoding::percent_decode_str;
+use percent_encoding::{percent_decode_str, utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use utoipa::ToSchema;
@@ -415,17 +419,43 @@ async fn create_request(
     )
     .await;
 
-    emit_event(
-        &state.pool,
-        state.config.redis_url.as_deref(),
-        DomainEvent::new(
-            "purchasing.pp.created",
-            "permintaan_pembelian",
-            &no_pp,
-            serde_json::json!({ "no_pp": no_pp, "total": total, "created_by": auth.username }),
-        ),
-    )
-    .await;
+    let ev = DomainEvent::new(
+        "purchasing.pp.created",
+        "permintaan_pembelian",
+        &no_pp,
+        serde_json::json!({ "no_pp": no_pp, "total": total, "created_by": auth.username }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    let action_url = format!(
+        "/purchasing/requests/detail?id={}",
+        utf8_percent_encode(&no_pp, NON_ALPHANUMERIC)
+    );
+    spawn_stage_notification(
+        state.pool.clone(),
+        state.notif_tx.clone(),
+        NotificationSpec {
+            event_id: Some(ev_id),
+            category: "approval_needed".into(),
+            module: "purchasing.pp".into(),
+            stage: Some("whm".into()),
+            entity_type: "permintaan_pembelian".into(),
+            entity_id: no_pp.clone(),
+            document_number: no_pp.clone(),
+            title: format!("PP Baru Menunggu Verifikasi: {}", no_pp),
+            message: format!(
+                "Permintaan Pembelian dibuat oleh {} (Est. Rp {:.0}). Mohon verifikasi SPV / WHM.",
+                auth.username, total
+            ),
+            action_url,
+            actor_username: auth.username.clone(),
+            actor_id_pegawai: Some(auth.id_pegawai.clone()),
+            amount: total,
+            metadata: serde_json::json!({ "total": total, "jenis": jenis }),
+        },
+        vec!["spv".into(), "whm".into()],
+    );
 
     get_request(State(state), auth, Path(no_pp)).await
 }
@@ -438,6 +468,15 @@ async fn approve_request(
 ) -> AppResult<Json<PurchaseRequestDetail>> {
     auth.require_role("ROLE_PERMINTAAN")?;
     let no_pp = decode_path_key(&raw_no_pp);
+
+    let pp_meta: Option<(Option<String>, f64)> = sqlx::query_as(
+        "SELECT dibuat, COALESCE(total, 0)::float8 FROM permintaan_pembelian WHERE no_pp = $1",
+    )
+    .bind(&no_pp)
+    .fetch_optional(&state.pool)
+    .await?;
+    let (creator_pegawai, total) = pp_meta
+        .ok_or_else(|| AppError::NotFound(format!("Permintaan Pembelian '{}' tidak ditemukan", no_pp)))?;
 
     match req.level.as_str() {
         "spv" => {
@@ -491,6 +530,167 @@ async fn approve_request(
         serde_json::json!({ "level": req.level, "approve": req.approve, "note": req.note }),
     )
     .await;
+
+    let ev_type = if !req.approve {
+        "purchasing.pp.rejected"
+    } else if req.level == "spv" || req.level == "whm" {
+        "purchasing.pp.step_approved"
+    } else {
+        "purchasing.pp.approved"
+    };
+    let ev = DomainEvent::new(
+        ev_type,
+        "permintaan_pembelian",
+        &no_pp,
+        serde_json::json!({ "no_pp": no_pp, "level": req.level, "approve": req.approve, "note": req.note }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    let action_url = format!(
+        "/purchasing/requests/detail?id={}",
+        utf8_percent_encode(&no_pp, NON_ALPHANUMERIC)
+    );
+
+    if !req.approve {
+        mark_stage_action_taken(&state.pool, "permintaan_pembelian", &no_pp, &[]).await;
+        if let Some(pid) = creator_pegawai.as_deref() {
+            if let Some(creator_uname) = lookup_username_by_pegawai(&state.pool, pid).await {
+                spawn_direct_notification(
+                    state.pool.clone(),
+                    state.notif_tx.clone(),
+                    NotificationSpec {
+                        event_id: Some(ev_id),
+                        category: "approval_result".into(),
+                        module: "purchasing.pp".into(),
+                        stage: Some(req.level.clone()),
+                        entity_type: "permintaan_pembelian".into(),
+                        entity_id: no_pp.clone(),
+                        document_number: no_pp.clone(),
+                        title: format!("PP Ditolak: {}", no_pp),
+                        message: format!(
+                            "Permintaan Pembelian ditolak oleh {} (tahap {}).",
+                            auth.username,
+                            req.level.to_uppercase()
+                        ),
+                        action_url,
+                        actor_username: auth.username.clone(),
+                        actor_id_pegawai: Some(auth.id_pegawai.clone()),
+                        amount: total,
+                        metadata: serde_json::json!({ "level": req.level, "approve": false, "note": req.note }),
+                    },
+                    vec![creator_uname],
+                );
+            }
+        }
+    } else if req.level == "spv" {
+        mark_stage_action_taken(&state.pool, "permintaan_pembelian", &no_pp, &["spv"]).await;
+        spawn_stage_notification(
+            state.pool.clone(),
+            state.notif_tx.clone(),
+            NotificationSpec {
+                event_id: Some(ev_id),
+                category: "approval_needed".into(),
+                module: "purchasing.pp".into(),
+                stage: Some("whm".into()),
+                entity_type: "permintaan_pembelian".into(),
+                entity_id: no_pp.clone(),
+                document_number: no_pp.clone(),
+                title: format!("PP Menunggu Verifikasi WHM: {}", no_pp),
+                message: format!(
+                    "Disetujui SPV ({}). Mohon verifikasi Warehouse Manager.",
+                    auth.username
+                ),
+                action_url,
+                actor_username: auth.username.clone(),
+                actor_id_pegawai: creator_pegawai.clone(),
+                amount: total,
+                metadata: serde_json::json!({ "total": total, "prev_level": "spv" }),
+            },
+            vec!["whm".into()],
+        );
+    } else if req.level == "whm" {
+        mark_stage_action_taken(&state.pool, "permintaan_pembelian", &no_pp, &["spv", "whm"]).await;
+        spawn_stage_notification(
+            state.pool.clone(),
+            state.notif_tx.clone(),
+            NotificationSpec {
+                event_id: Some(ev_id),
+                category: "approval_needed".into(),
+                module: "purchasing.pp".into(),
+                stage: Some("gm".into()),
+                entity_type: "permintaan_pembelian".into(),
+                entity_id: no_pp.clone(),
+                document_number: no_pp.clone(),
+                title: format!("PP Menunggu Approval GM/Direktur: {}", no_pp),
+                message: format!(
+                    "Diverifikasi WHM ({}). Est. Rp {:.0}. Mohon persetujuan final.",
+                    auth.username, total
+                ),
+                action_url,
+                actor_username: auth.username.clone(),
+                actor_id_pegawai: creator_pegawai.clone(),
+                amount: total,
+                metadata: serde_json::json!({ "total": total, "prev_level": "whm" }),
+            },
+            vec!["gm".into()],
+        );
+    } else {
+        // Final approval (GM / Director)
+        mark_stage_action_taken(&state.pool, "permintaan_pembelian", &no_pp, &[]).await;
+        if let Some(pid) = creator_pegawai.as_deref() {
+            if let Some(creator_uname) = lookup_username_by_pegawai(&state.pool, pid).await {
+                spawn_direct_notification(
+                    state.pool.clone(),
+                    state.notif_tx.clone(),
+                    NotificationSpec {
+                        event_id: Some(ev_id),
+                        category: "approval_result".into(),
+                        module: "purchasing.pp".into(),
+                        stage: Some("gm".into()),
+                        entity_type: "permintaan_pembelian".into(),
+                        entity_id: no_pp.clone(),
+                        document_number: no_pp.clone(),
+                        title: format!("PP Disetujui: {}", no_pp),
+                        message: format!(
+                            "Permintaan Pembelian telah disetujui final oleh {}.",
+                            auth.username
+                        ),
+                        action_url: action_url.clone(),
+                        actor_username: auth.username.clone(),
+                        actor_id_pegawai: Some(auth.id_pegawai.clone()),
+                        amount: total,
+                        metadata: serde_json::json!({ "total": total, "approve": true }),
+                    },
+                    vec![creator_uname],
+                );
+            }
+        }
+        spawn_stage_notification(
+            state.pool.clone(),
+            state.notif_tx.clone(),
+            NotificationSpec {
+                event_id: None,
+                category: "action_needed".into(),
+                module: "purchasing.pp".into(),
+                stage: Some("purchasing_team".into()),
+                entity_type: "permintaan_pembelian".into(),
+                entity_id: no_pp.clone(),
+                document_number: no_pp.clone(),
+                title: format!("PP Approved — Siap Buat PO: {}", no_pp),
+                message: format!(
+                    "PP telah disetujui oleh {} (Est. Rp {:.0}) dan siap diproses menjadi PO.",
+                    auth.username, total
+                ),
+                action_url,
+                actor_username: auth.username.clone(),
+                actor_id_pegawai: creator_pegawai,
+                amount: total,
+                metadata: serde_json::json!({ "total": total }),
+            },
+            vec!["purchasing_team".into()],
+        );
+    }
 
     get_request(State(state), auth, Path(no_pp)).await
 }
@@ -776,17 +976,39 @@ async fn create_order(
     )
     .await;
 
-    emit_event(
-        &state.pool,
-        state.config.redis_url.as_deref(),
-        DomainEvent::new(
-            "purchasing.po.created",
-            "po",
-            &nomor_po,
-            serde_json::json!({ "id": next_id, "nomor_po": nomor_po, "grandtotal": totals.grandtotal }),
-        ),
-    )
-    .await;
+    let ev = DomainEvent::new(
+        "purchasing.po.created",
+        "po",
+        &nomor_po,
+        serde_json::json!({ "id": next_id, "nomor_po": nomor_po, "grandtotal": totals.grandtotal }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    spawn_stage_notification(
+        state.pool.clone(),
+        state.notif_tx.clone(),
+        NotificationSpec {
+            event_id: Some(ev_id),
+            category: "approval_needed".into(),
+            module: "purchasing.po".into(),
+            stage: Some("check1".into()),
+            entity_type: "po".into(),
+            entity_id: next_id.to_string(),
+            document_number: nomor_po.clone(),
+            title: format!("PO Baru Menunggu Check (Level 1): {}", nomor_po),
+            message: format!(
+                "PO dibuat oleh {} (Rp {:.0}). Mohon pemeriksaan Level 1.",
+                auth.username, totals.grandtotal
+            ),
+            action_url: format!("/purchasing/orders/detail?id={}", next_id),
+            actor_username: auth.username.clone(),
+            actor_id_pegawai: Some(auth.id_pegawai.clone()),
+            amount: totals.grandtotal,
+            metadata: serde_json::json!({ "id": next_id, "grandtotal": totals.grandtotal, "id_supplier": req.id_supplier }),
+        },
+        vec!["check1".into()],
+    );
 
     get_order(State(state), auth, Path(next_id)).await
 }
@@ -798,6 +1020,21 @@ async fn check_order(
     Json(req): Json<PoDecisionRequest>,
 ) -> AppResult<Json<PurchaseOrderDetail>> {
     auth.require_role("ROLE_PO")?;
+
+    let po_meta: Option<(String, Option<String>, f64)> = sqlx::query_as(
+        r#"
+        SELECT nomor_po,
+               purchasing,
+               (COALESCE(total, 0) - COALESCE(total_discount, 0) + COALESCE(total_ppn, 0) + COALESCE(total_pph, 0))::float8
+        FROM po
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?;
+    let (nomor_po, creator_pegawai, grandtotal) =
+        po_meta.ok_or_else(|| AppError::NotFound("PO tidak ditemukan".into()))?;
 
     sqlx::query(
         r#"
@@ -824,6 +1061,69 @@ async fn check_order(
     )
     .await;
 
+    let ev = DomainEvent::new(
+        "purchasing.po.checked",
+        "po",
+        &nomor_po,
+        serde_json::json!({ "id": id, "nomor_po": nomor_po, "approve": req.approve, "note": req.note }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    mark_stage_action_taken(&state.pool, "po", &id.to_string(), &["check1"]).await;
+
+    let action_url = format!("/purchasing/orders/detail?id={}", id);
+    if req.approve {
+        spawn_stage_notification(
+            state.pool.clone(),
+            state.notif_tx.clone(),
+            NotificationSpec {
+                event_id: Some(ev_id),
+                category: "approval_needed".into(),
+                module: "purchasing.po".into(),
+                stage: Some("director".into()),
+                entity_type: "po".into(),
+                entity_id: id.to_string(),
+                document_number: nomor_po.clone(),
+                title: format!("PO Menunggu Approval Direktur: {}", nomor_po),
+                message: format!(
+                    "Sudah diperiksa oleh {} (Rp {:.0}). Mohon persetujuan Direktur.",
+                    auth.username, grandtotal
+                ),
+                action_url,
+                actor_username: auth.username.clone(),
+                actor_id_pegawai: creator_pegawai,
+                amount: grandtotal,
+                metadata: serde_json::json!({ "id": id, "grandtotal": grandtotal }),
+            },
+            vec!["director".into()],
+        );
+    } else if let Some(pid) = creator_pegawai.as_deref() {
+        if let Some(creator_uname) = lookup_username_by_pegawai(&state.pool, pid).await {
+            spawn_direct_notification(
+                state.pool.clone(),
+                state.notif_tx.clone(),
+                NotificationSpec {
+                    event_id: Some(ev_id),
+                    category: "approval_result".into(),
+                    module: "purchasing.po".into(),
+                    stage: Some("check1".into()),
+                    entity_type: "po".into(),
+                    entity_id: id.to_string(),
+                    document_number: nomor_po.clone(),
+                    title: format!("PO Ditolak (Check Level 1): {}", nomor_po),
+                    message: format!("PO ditolak saat pemeriksaan oleh {}.", auth.username),
+                    action_url,
+                    actor_username: auth.username.clone(),
+                    actor_id_pegawai: Some(auth.id_pegawai.clone()),
+                    amount: grandtotal,
+                    metadata: serde_json::json!({ "id": id, "approve": false, "note": req.note }),
+                },
+                vec![creator_uname],
+            );
+        }
+    }
+
     get_order(State(state), auth, Path(id)).await
 }
 
@@ -835,12 +1135,20 @@ async fn approve_order(
 ) -> AppResult<Json<PurchaseOrderDetail>> {
     auth.require_role("ROLE_PO")?;
 
-    let nomor_po: Option<String> =
-        sqlx::query_scalar("SELECT nomor_po FROM po WHERE id = $1")
-            .bind(id)
-            .fetch_optional(&state.pool)
-            .await?;
-    let nomor_po = nomor_po.ok_or_else(|| AppError::NotFound("PO tidak ditemukan".into()))?;
+    let po_meta: Option<(String, Option<String>, f64)> = sqlx::query_as(
+        r#"
+        SELECT nomor_po,
+               purchasing,
+               (COALESCE(total, 0) - COALESCE(total_discount, 0) + COALESCE(total_ppn, 0) + COALESCE(total_pph, 0))::float8
+        FROM po
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?;
+    let (nomor_po, creator_pegawai, grandtotal) =
+        po_meta.ok_or_else(|| AppError::NotFound("PO tidak ditemukan".into()))?;
 
     let receipt_count: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM penerimaan WHERE nomor_po = $1 AND COALESCE(status, 'D') <> 'C'",
@@ -882,17 +1190,79 @@ async fn approve_order(
     )
     .await;
 
-    emit_event(
-        &state.pool,
-        state.config.redis_url.as_deref(),
-        DomainEvent::new(
-            "purchasing.po.approved",
-            "po",
-            &nomor_po,
-            serde_json::json!({ "id": id, "nomor_po": nomor_po, "approve": req.approve }),
-        ),
-    )
-    .await;
+    let ev = DomainEvent::new(
+        "purchasing.po.approved",
+        "po",
+        &nomor_po,
+        serde_json::json!({ "id": id, "nomor_po": nomor_po, "approve": req.approve }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    mark_stage_action_taken(&state.pool, "po", &id.to_string(), &[]).await;
+
+    let action_url = format!("/purchasing/orders/detail?id={}", id);
+    if let Some(pid) = creator_pegawai.as_deref() {
+        if let Some(creator_uname) = lookup_username_by_pegawai(&state.pool, pid).await {
+            spawn_direct_notification(
+                state.pool.clone(),
+                state.notif_tx.clone(),
+                NotificationSpec {
+                    event_id: Some(ev_id),
+                    category: "approval_result".into(),
+                    module: "purchasing.po".into(),
+                    stage: Some("director".into()),
+                    entity_type: "po".into(),
+                    entity_id: id.to_string(),
+                    document_number: nomor_po.clone(),
+                    title: if req.approve {
+                        format!("PO Disetujui Direktur: {}", nomor_po)
+                    } else {
+                        format!("PO Ditolak Direktur: {}", nomor_po)
+                    },
+                    message: format!(
+                        "Purchase Order (Rp {:.0}) telah {} oleh {}.",
+                        grandtotal,
+                        if req.approve { "disetujui" } else { "ditolak" },
+                        auth.username
+                    ),
+                    action_url: action_url.clone(),
+                    actor_username: auth.username.clone(),
+                    actor_id_pegawai: Some(auth.id_pegawai.clone()),
+                    amount: grandtotal,
+                    metadata: serde_json::json!({ "id": id, "approve": req.approve, "grandtotal": grandtotal }),
+                },
+                vec![creator_uname],
+            );
+        }
+    }
+
+    if req.approve {
+        spawn_stage_notification(
+            state.pool.clone(),
+            state.notif_tx.clone(),
+            NotificationSpec {
+                event_id: None,
+                category: "action_needed".into(),
+                module: "purchasing.po".into(),
+                stage: Some("warehouse".into()),
+                entity_type: "po".into(),
+                entity_id: id.to_string(),
+                document_number: nomor_po.clone(),
+                title: format!("PO Approved — Siap Penerimaan: {}", nomor_po),
+                message: format!(
+                    "PO disetujui Direktur ({}) senilai Rp {:.0}. Gudang dapat memproses penerimaan.",
+                    auth.username, grandtotal
+                ),
+                action_url,
+                actor_username: auth.username.clone(),
+                actor_id_pegawai: creator_pegawai,
+                amount: grandtotal,
+                metadata: serde_json::json!({ "id": id, "grandtotal": grandtotal }),
+            },
+            vec!["warehouse".into()],
+        );
+    }
 
     get_order(State(state), auth, Path(id)).await
 }

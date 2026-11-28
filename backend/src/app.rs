@@ -2,6 +2,7 @@ use crate::{
     auth::{self, ChangePasswordRequest, LoginRequest, LoginResponse, MenuNode, OkResponse, UserProfile},
     config::AppConfig,
     modules,
+    services::notifications::NotificationPush,
     utils::{ErrorBody, ErrorEnvelope},
 };
 use axum::{
@@ -14,6 +15,7 @@ use axum::{
 use serde::Serialize;
 use sqlx::PgPool;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use tower_http::{
     compression::CompressionLayer,
     cors::{AllowOrigin, CorsLayer},
@@ -25,6 +27,7 @@ use utoipa::{OpenApi, ToSchema};
 pub struct AppState {
     pub pool: PgPool,
     pub config: Arc<AppConfig>,
+    pub notif_tx: broadcast::Sender<NotificationPush>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -177,6 +180,7 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/warehouse", modules::warehouse::router())
         .nest("/finance", modules::finance::router())
         .nest("/reporting", modules::reporting::router())
+        .nest("/notifications", modules::notifications::router())
         .nest("/sync", modules::sync::router());
 
     Router::new()

@@ -2,14 +2,38 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { isTauriRuntime } from "@/core/tauri-bridge";
 import { toast } from "sonner";
-import { Lock, User } from "lucide-react";
+import { Download, Lock, User } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [username, setUsername] = useState("superadmin");
-  const [password, setPassword] = useState("superadmin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const handleDownload = async (
+    url: string,
+    filename: string,
+    notFoundMsg: string,
+    errMsg: string
+  ) => {
+    try {
+      const res = await fetch(url, { method: "HEAD" });
+      if (res.ok) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } else {
+        toast.info(notFoundMsg);
+      }
+    } catch {
+      toast.error(errMsg);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +116,72 @@ export default function LoginPage() {
               {submitting ? "Memverifikasi..." : "Log in"}
             </button>
           </form>
+
+          {!isTauriRuntime() && (
+            <div className="mt-8 border-t border-slate-200/80 pt-6">
+              <div className="mb-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#788a9a]">
+                <Download size={12} />
+                <span>Download Aplikasi NEOCRA</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleDownload(
+                      "/downloads/NEOCRA-setup.exe",
+                      "NEOCRA-setup.exe",
+                      "Installer NEOCRA-setup.exe belum tersedia di server.",
+                      "Gagal memeriksa file installer NEOCRA-setup.exe"
+                    )
+                  }
+                  className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3.5 text-center shadow-xs transition-all hover:border-[#00a4ef] hover:bg-sky-50/40 hover:shadow-md"
+                  title="Download Aplikasi Desktop Windows (.exe)"
+                >
+                  <img
+                    src="/logo-windows.png"
+                    alt="Windows"
+                    className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                  />
+                  <div>
+                    <div className="text-xs font-bold text-[#06152b]">
+                      NEOCRA.exe
+                    </div>
+                    <div className="text-[10px] text-[#788a9a]">
+                      Windows Desktop
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleDownload(
+                      "/downloads/NEOCRA-android.apk",
+                      "NEOCRA-android.apk",
+                      "Installer Android NEOCRA-android.apk belum tersedia di server.",
+                      "Gagal memeriksa file NEOCRA-android.apk"
+                    )
+                  }
+                  className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3.5 text-center shadow-xs transition-all hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-md"
+                  title="Download Aplikasi Android NEOCRA (.apk)"
+                >
+                  <img
+                    src="/logo-android.png"
+                    alt="Android"
+                    className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                  />
+                  <div>
+                    <div className="text-xs font-bold text-[#06152b]">
+                      NEOCRA.apk
+                    </div>
+                    <div className="text-[10px] text-[#788a9a]">
+                      Android Mobile
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

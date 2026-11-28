@@ -33,6 +33,8 @@ const queryClient = useQueryClient();
     onSuccess: () => {
       toast.success("Status Sales Order diperbarui");
       queryClient.invalidateQueries({ queryKey: ["so-detail", decodedNomor] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });

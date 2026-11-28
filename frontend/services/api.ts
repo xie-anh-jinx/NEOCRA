@@ -4,6 +4,10 @@ const API_BASE =
   (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "") +
   "/api/v1";
 
+export function getApiBaseUrl(): string {
+  return API_BASE;
+}
+
 const FASTAPI_BASE = (
   process.env.NEXT_PUBLIC_FASTAPI_URL || "https://warehouse.pengajaran.com/api"
 ).replace(/\/$/, "");

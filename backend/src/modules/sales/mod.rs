@@ -4,6 +4,10 @@ use crate::{
     events::DomainEvent,
     services::{
         audit::write_audit_log,
+        notifications::{
+            lookup_username_by_pegawai, mark_stage_action_taken, spawn_direct_notification,
+            spawn_stage_notification, NotificationSpec,
+        },
         numbering::{compute_line, compute_totals, next_so_number, LineCalc},
         outbox::emit_event,
     },
@@ -15,7 +19,7 @@ use axum::{
     Json, Router,
 };
 use chrono::NaiveDate;
-use percent_encoding::percent_decode_str;
+use percent_encoding::{percent_decode_str, utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use utoipa::ToSchema;
@@ -391,17 +395,43 @@ async fn create_order(
     )
     .await;
 
-    emit_event(
-        &state.pool,
-        state.config.redis_url.as_deref(),
-        DomainEvent::new(
-            "sales.so.created",
-            "so",
-            &nomor,
-            serde_json::json!({ "nomor": nomor, "grandtotal": totals.grandtotal }),
-        ),
-    )
-    .await;
+    let ev = DomainEvent::new(
+        "sales.so.created",
+        "so",
+        &nomor,
+        serde_json::json!({ "nomor": nomor, "grandtotal": totals.grandtotal }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    let action_url = format!(
+        "/sales/orders/detail?id={}",
+        utf8_percent_encode(&nomor, NON_ALPHANUMERIC)
+    );
+    spawn_stage_notification(
+        state.pool.clone(),
+        state.notif_tx.clone(),
+        NotificationSpec {
+            event_id: Some(ev_id),
+            category: "action_needed".into(),
+            module: "sales.so".into(),
+            stage: Some("warehouse".into()),
+            entity_type: "so".into(),
+            entity_id: nomor.clone(),
+            document_number: nomor.clone(),
+            title: format!("Sales Order Baru: {}", nomor),
+            message: format!(
+                "SO dibuat oleh {} (Rp {:.0}). Siap ditinjau & diproses.",
+                auth.username, totals.grandtotal
+            ),
+            action_url,
+            actor_username: auth.username.clone(),
+            actor_id_pegawai: Some(auth.id_pegawai.clone()),
+            amount: totals.grandtotal,
+            metadata: serde_json::json!({ "grandtotal": totals.grandtotal, "id_customer": req.id_customer }),
+        },
+        vec!["warehouse".into()],
+    );
 
     get_order(State(state), auth, Path(nomor)).await
 }
@@ -414,6 +444,13 @@ async fn update_order_status(
 ) -> AppResult<Json<SalesOrderDetail>> {
     auth.require_role("ROLE_SO")?;
     let nomor = decode_key(&raw_nomor);
+
+    let so_meta: Option<(Option<String>, Option<String>, f64)> = sqlx::query_as(
+        "SELECT id_salesman, kode_user, COALESCE(grandtotal, 0)::float8 FROM so WHERE nomor = $1",
+    )
+    .bind(&nomor)
+    .fetch_optional(&state.pool)
+    .await?;
 
     sqlx::query("UPDATE so SET status = $2, modified_date = NOW() WHERE nomor = $1")
         .bind(&nomor)
@@ -430,6 +467,60 @@ async fn update_order_status(
         serde_json::json!({ "status": req.status }),
     )
     .await;
+
+    let ev = DomainEvent::new(
+        "sales.so.status_changed",
+        "so",
+        &nomor,
+        serde_json::json!({ "nomor": nomor, "status": req.status }),
+    );
+    let ev_id = ev.id;
+    emit_event(&state.pool, state.config.redis_url.as_deref(), ev).await;
+
+    mark_stage_action_taken(&state.pool, "so", &nomor, &[]).await;
+
+    if let Some((salesman_id, creator_id, grandtotal)) = so_meta {
+        let target_pegawai = creator_id.or(salesman_id);
+        if let Some(pid) = target_pegawai.as_deref() {
+            if let Some(target_uname) = lookup_username_by_pegawai(&state.pool, pid).await {
+                let status_text = match req.status.as_str() {
+                    "P" => "Diproses (Processed)",
+                    "C" => "Dibatalkan (Cancelled)",
+                    "R" => "Ditolak (Rejected)",
+                    "S" => "Submitted",
+                    _ => req.status.as_str(),
+                };
+                let action_url = format!(
+                    "/sales/orders/detail?id={}",
+                    utf8_percent_encode(&nomor, NON_ALPHANUMERIC)
+                );
+                spawn_direct_notification(
+                    state.pool.clone(),
+                    state.notif_tx.clone(),
+                    NotificationSpec {
+                        event_id: Some(ev_id),
+                        category: "status_update".into(),
+                        module: "sales.so".into(),
+                        stage: None,
+                        entity_type: "so".into(),
+                        entity_id: nomor.clone(),
+                        document_number: nomor.clone(),
+                        title: format!("SO {}: {}", status_text, nomor),
+                        message: format!(
+                            "Status Sales Order diubah menjadi {} oleh {}.",
+                            status_text, auth.username
+                        ),
+                        action_url,
+                        actor_username: auth.username.clone(),
+                        actor_id_pegawai: Some(auth.id_pegawai.clone()),
+                        amount: grandtotal,
+                        metadata: serde_json::json!({ "status": req.status, "grandtotal": grandtotal }),
+                    },
+                    vec![target_uname],
+                );
+            }
+        }
+    }
 
     get_order(State(state), auth, Path(nomor)).await
 }

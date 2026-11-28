@@ -33,6 +33,8 @@ const queryClient = useQueryClient();
     onSuccess: () => {
       toast.success("Status persetujuan PP berhasil diperbarui");
       queryClient.invalidateQueries({ queryKey: ["pp-detail", decodedNo] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -437,3 +437,52 @@ export interface CashTransactionRow {
   kepada: string | null;
   status: string;
 }
+
+export interface NotificationItem {
+  id: string;
+  recipient_username: string;
+  event_id: string | null;
+  category: "approval_needed" | "action_needed" | "approval_result" | "status_update" | string;
+  module: string;
+  stage: string | null;
+  entity_type: string;
+  entity_id: string;
+  document_number: string;
+  title: string;
+  message: string;
+  action_url: string;
+  actor_username: string | null;
+  metadata: Record<string, unknown>;
+  is_read: boolean;
+  read_at: string | null;
+  action_taken_at: string | null;
+  created_at: string;
+}
+
+export interface UnreadCountResponse {
+  unread: number;
+  pending_approvals: number;
+}
+
+export interface NotificationPushEvent {
+  recipient_username: string;
+  notification: NotificationItem;
+  unread: number;
+  pending_approvals: number;
+}
+
+export interface ApprovalRuleDto {
+  id: number;
+  module: string;
+  stage: string;
+  target_type: "direct_supervisor" | "jabatan" | "role" | "username" | string;
+  target_value: string | null;
+  branch_code: string | null;
+  min_amount: number;
+  max_amount: number | null;
+  notify_in_app: boolean;
+  notify_whatsapp: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

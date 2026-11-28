@@ -43,3 +43,4 @@ dotenvy = "0.15"
 # Redis / Queue (optional at runtime)
 redis = { version = "0.27", features = ["tokio-comp"] }
 percent-encoding = "2"
+tokio-stream = { version = "0.1", features = ["sync"] }

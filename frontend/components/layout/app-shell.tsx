@@ -7,15 +7,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetch } from "@/services/api";
 import { uploadUserAvatar } from "@/lib/avatar";
-import { isTauriRuntime } from "@/core/tauri-bridge";
 import { mapMenuOutcomeToHref } from "@/lib/permissions";
 import type { MenuNode } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import {
   Activity,
   BarChart3,
+  Bell,
   BookOpen,
   Boxes,
   Briefcase,
@@ -29,7 +30,6 @@ import {
   ClipboardList,
   Clock,
   CreditCard,
-  Download,
   FileSpreadsheet,
   FileText,
   LayoutDashboard,
@@ -40,7 +40,6 @@ import {
   Receipt,
   ShieldCheck,
   ShoppingCart,
-  Smartphone,
   Sun,
   Timer,
   Truck,
@@ -409,7 +408,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
 
           {user?.is_superadmin && (
-            <div className="pt-2 border-t border-slate-200/60">
+            <div className="pt-2 space-y-1 border-t border-slate-200/60">
               <Link
                 href="/system/users"
                 title="Pengguna & Hak Akses"
@@ -427,67 +426,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
                 {!collapsed && <span className="truncate">Pengguna &amp; Hak Akses</span>}
               </Link>
+              <Link
+                href="/system/approvals"
+                title="Aturan Notifikasi Approval"
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  pathname.startsWith("/system/approvals")
+                    ? "bg-[#3a36db] text-white shadow-md shadow-[#3a36db]/25"
+                    : darkMode
+                    ? "text-[#a1a0b8] hover:bg-white/10 hover:text-white"
+                    : "text-[#788a9a] hover:bg-[#f1f4fa] hover:text-[#06152b]"
+                )}
+              >
+                <span className={cn("shrink-0", pathname.startsWith("/system/approvals") ? "text-white" : "")}>
+                  <Bell size={18} />
+                </span>
+                {!collapsed && <span className="truncate">Notifikasi Approval</span>}
+              </Link>
             </div>
           )}
         </nav>
-
-        {!collapsed && !isTauriRuntime() && (
-          <div className="mx-3 mb-2 space-y-1.5">
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const res = await fetch("/downloads/NEOCRA-setup.exe", { method: "HEAD" });
-                  if (res.ok) {
-                    const a = document.createElement("a");
-                    a.href = "/downloads/NEOCRA-setup.exe";
-                    a.download = "NEOCRA-setup.exe";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                  } else {
-                    toast.info("Installer NEOCRA-setup.exe belum tersedia di server.");
-                  }
-                } catch {
-                  toast.error("Gagal memeriksa file installer NEOCRA-setup.exe");
-                }
-              }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3a36db] px-3 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#2f2bc2]"
-              title="Download Aplikasi Desktop Windows (.exe)"
-            >
-              <Download size={14} />
-              <span>Download NEOCRA.exe</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const res = await fetch("/downloads/NEOCRA-android.apk", { method: "HEAD" });
-                  if (res.ok) {
-                    const a = document.createElement("a");
-                    a.href = "/downloads/NEOCRA-android.apk";
-                    a.download = "NEOCRA-android.apk";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                  } else {
-                    toast.info(
-                      "Installer Android NEOCRA-android.apk belum diunggah ke /root/NEOCRA/downloads/NEOCRA-android.apk. Jalankan workflow build-android.yml di GitHub Actions terlebih dahulu."
-                    );
-                  }
-                } catch {
-                  toast.error("Gagal memeriksa file NEOCRA-android.apk");
-                }
-              }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-emerald-700"
-              title="Download Aplikasi Android NEOCRA (.apk)"
-            >
-              <Smartphone size={14} />
-              <span>Download NEOCRA.apk</span>
-            </button>
-          </div>
-        )}
 
         {!collapsed && user && (
           <div
@@ -549,7 +507,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <NotificationBell darkMode={darkMode} />
             <Link
               href="/system/sync"
               title="Status Koneksi & Sync Center"

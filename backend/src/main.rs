@@ -30,9 +30,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("PostgreSQL connected & NEOCRA schema verified.");
 
     let port = config.port;
+    let (notif_tx, _) = tokio::sync::broadcast::channel(256);
     let state = AppState {
         pool,
         config: Arc::new(config),
+        notif_tx,
     };
 
     let router = build_router(state);

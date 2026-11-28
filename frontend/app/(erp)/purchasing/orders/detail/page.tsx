@@ -30,6 +30,8 @@ const queryClient = useQueryClient();
     onSuccess: () => {
       toast.success("Status pemeriksaan PO diperbarui");
       queryClient.invalidateQueries({ queryKey: ["po-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -43,6 +45,8 @@ const queryClient = useQueryClient();
     onSuccess: () => {
       toast.success("Status persetujuan Direktur diperbarui");
       queryClient.invalidateQueries({ queryKey: ["po-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
